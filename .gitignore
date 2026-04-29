@@ -34,3 +34,7 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Environment variables (never commit real credentials)
+soulsync-ai/.env
+.env
