@@ -146,7 +146,7 @@ function Hero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-extrabold text-white leading-tight mb-6"
+          className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-white leading-tight mb-6"
         >
           Your Personal{" "}
           <span className="bg-gradient-to-r from-soul-400 via-glow-400 to-teal-400
@@ -160,7 +160,7 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-xl text-surface-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+          className="text-base sm:text-xl text-surface-400 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
           A command-driven AI that understands, remembers, and acts for you.
           Not just a chatbot — a companion that grows with you.
@@ -263,7 +263,7 @@ function HowItWorks() {
         </motion.div>
 
         <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true }}
-          className="grid md:grid-cols-4 gap-6 relative">
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 relative">
           <div className="hidden md:block absolute top-12 left-[12.5%] right-[12.5%]
                           h-px bg-gradient-to-r from-transparent via-soul-500/30 to-transparent" />
           {steps.map((s, i) => (
@@ -322,7 +322,7 @@ function Features() {
         </motion.div>
 
         <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true }}
-          className="grid md:grid-cols-3 gap-6">
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
           {features.map((f, i) => (
             <motion.div key={i} variants={fadeUp}
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
@@ -374,21 +374,23 @@ function WhyDifferent() {
           initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }} transition={{ duration: 0.6 }}
           className="bg-surface-900/70 border border-surface-800 rounded-2xl overflow-hidden">
-          <div className="grid grid-cols-3 bg-surface-800/60 px-6 py-4 text-sm font-semibold">
+          <div className="grid grid-cols-3 bg-surface-800/60 px-3 sm:px-6 py-4 text-xs sm:text-sm font-semibold">
             <span className="text-surface-400">Feature</span>
-            <span className="text-surface-500 text-center">Other AI Chats</span>
-            <span className="text-soul-400 text-center">SoulSync AI</span>
+            <span className="text-surface-500 text-center">Others</span>
+            <span className="text-soul-400 text-center">SoulSync</span>
           </div>
           {rows.map((r, i) => (
             <div key={i}
-              className={`grid grid-cols-3 px-6 py-4 text-sm items-center
+              className={`grid grid-cols-3 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm items-center
                           ${i % 2 === 0 ? "bg-surface-900/40" : ""}`}>
               <span className="font-medium text-surface-300">{r.feature}</span>
-              <span className="text-center text-surface-500 flex items-center justify-center gap-1.5">
-                <X size={13} className="text-red-500 shrink-0" /> {r.others}
+              <span className="text-center text-surface-500 flex items-center justify-center gap-1">
+                <X size={11} className="text-red-500 shrink-0 hidden sm:block" />
+                <span className="text-[10px] sm:text-xs">{r.others}</span>
               </span>
-              <span className="text-center text-soul-400 flex items-center justify-center gap-1.5">
-                <CheckSquare size={13} className="shrink-0" /> {r.soul}
+              <span className="text-center text-soul-400 flex items-center justify-center gap-1">
+                <CheckSquare size={11} className="shrink-0 hidden sm:block" />
+                <span className="text-[10px] sm:text-xs">{r.soul}</span>
               </span>
             </div>
           ))}
@@ -409,11 +411,11 @@ function CTA() {
           viewport={{ once: true }} transition={{ duration: 0.6 }}
           className="relative overflow-hidden rounded-3xl
                      bg-gradient-to-br from-soul-700 via-soul-600 to-teal-700
-                     p-12 text-center shadow-2xl shadow-soul-900/60">
+                     p-8 sm:p-12 text-center shadow-2xl shadow-soul-900/60">
           <Orb className="w-64 h-64 bg-glow-400/20 top-0 right-0" />
           <Orb className="w-48 h-48 bg-teal-300/15 bottom-0 left-0" />
           <div className="relative z-10">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4">
               Start building your smarter life today
             </h2>
             <p className="text-soul-100/80 text-lg mb-8 max-w-xl mx-auto">
@@ -443,7 +445,7 @@ function Footer() {
   return (
     <footer className="border-t border-surface-800 py-12 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="grid md:grid-cols-4 gap-8 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-10">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2.5 mb-4">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-soul-500 to-soul-700

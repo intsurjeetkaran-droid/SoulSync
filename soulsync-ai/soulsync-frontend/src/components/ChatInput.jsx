@@ -6,7 +6,6 @@ export default function ChatInput({ onSend, isLoading, prefill }) {
   const [recording, setRecording] = useState(false);
   const textareaRef               = useRef(null);
 
-  // Accept prefill from suggestion chips
   useEffect(() => {
     if (prefill) {
       setText(prefill);
@@ -55,9 +54,9 @@ export default function ChatInput({ onSend, isLoading, prefill }) {
   const hasText = text.trim().length > 0;
 
   return (
-    <div className="px-4 py-4 bg-surface-900/80 backdrop-blur-sm
+    <div className="px-3 sm:px-4 py-3 sm:py-4 bg-surface-900/80 backdrop-blur-sm
                     border-t border-surface-800 shrink-0">
-      <div className={`flex items-end gap-2 bg-surface-800 rounded-2xl px-4 py-3
+      <div className={`flex items-end gap-2 bg-surface-800 rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3
                        border transition-all duration-200
                        ${hasText
                          ? "border-soul-600/60 shadow-sm shadow-soul-900/30"
@@ -72,8 +71,8 @@ export default function ChatInput({ onSend, isLoading, prefill }) {
           rows={1}
           className="flex-1 bg-transparent text-surface-100 placeholder-surface-500
                      text-sm outline-none resize-none leading-relaxed
-                     max-h-32 overflow-y-auto"
-          style={{ minHeight: "24px" }}
+                     max-h-28 overflow-y-auto"
+          style={{ minHeight: "22px" }}
         />
 
         {/* Voice */}
@@ -84,7 +83,7 @@ export default function ChatInput({ onSend, isLoading, prefill }) {
               ? "text-red-400 bg-red-400/10 animate-pulse"
               : "text-surface-500 hover:text-surface-300 hover:bg-surface-700"}`}
           title="Voice input">
-          {recording ? <MicOff size={17} /> : <Mic size={17} />}
+          {recording ? <MicOff size={16} /> : <Mic size={16} />}
         </button>
 
         {/* Send */}
@@ -97,12 +96,13 @@ export default function ChatInput({ onSend, isLoading, prefill }) {
                         ? "bg-soul-600 hover:bg-soul-500 text-white shadow-sm shadow-soul-900/40"
                         : "bg-surface-700 text-surface-500"}`}>
           {isLoading
-            ? <Loader2 size={17} className="animate-spin" />
-            : <Send size={17} />}
+            ? <Loader2 size={16} className="animate-spin" />
+            : <Send size={16} />}
         </button>
       </div>
 
-      <p className="text-center text-[11px] text-surface-600 mt-2">
+      {/* Keyboard hint — hidden on mobile */}
+      <p className="hidden sm:block text-center text-[11px] text-surface-600 mt-2">
         <kbd className="bg-surface-800 px-1.5 py-0.5 rounded text-surface-500 font-mono">Enter</kbd>
         {" "}to send ·{" "}
         <kbd className="bg-surface-800 px-1.5 py-0.5 rounded text-surface-500 font-mono">Shift+Enter</kbd>
