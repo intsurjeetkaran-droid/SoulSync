@@ -37,4 +37,5 @@ Thumbs.db
 
 # Environment variables (never commit real credentials)
 soulsync-ai/.env
+soulsync-ai/soulsync-frontend/.env
 .env

@@ -48,7 +48,12 @@ app = FastAPI(
 # ─── CORS ─────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins     = ["*"],
+    allow_origins     = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://soulsync-vl8w.onrender.com",
+        "*",   # remove in production and list exact origins
+    ],
     allow_credentials = True,
     allow_methods     = ["*"],
     allow_headers     = ["*"],
