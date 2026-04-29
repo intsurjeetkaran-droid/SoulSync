@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+soulsync_env/
+venv/
+env/
+
+# Node
+soulsync-frontend/node_modules/
+soulsync-frontend/dist/
+
+# Large model files (downloaded at runtime)
+models/*.onnx
+
+# Data (mounted as volume)
+data/vectors/
+
+# Dev files
+.env.local
+*.log
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Test scripts
+scripts/
+
+# IDE
+.vscode/
+.idea/

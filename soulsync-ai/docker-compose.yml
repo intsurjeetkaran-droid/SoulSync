@@ -1,0 +1,87 @@
+version: "3.9"
+
+# ─── SoulSync AI - Docker Compose ────────────────────────
+# Runs: Backend + Frontend + PostgreSQL together
+#
+# Usage:
+#   docker-compose up --build        # first time
+#   docker-compose up                # subsequent runs
+#   docker-compose down              # stop all
+#   docker-compose logs backend      # view backend logs
+
+services:
+
+  # ── PostgreSQL Database ───────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: soulsync-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       soulsync_db
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: soulsync2024
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - soulsync-net
+
+  # ── FastAPI Backend ───────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: soulsync-backend
+    restart: unless-stopped
+    environment:
+      DB_HOST:     postgres
+      DB_PORT:     5432
+      DB_NAME:     soulsync_db
+      DB_USER:     postgres
+      DB_PASSWORD: soulsync2024
+    volumes:
+      - ./data:/app/data          # persist vector indexes
+      - ./models:/app/models      # persist ONNX models
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - soulsync-net
+
+  # ── React Frontend ────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: soulsync-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - soulsync-net
+
+# ── Volumes ───────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+
+# ── Networks ──────────────────────────────────────────────
+networks:
+  soulsync-net:
+    driver: bridge

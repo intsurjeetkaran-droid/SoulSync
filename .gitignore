@@ -1,0 +1,36 @@
+# Python virtual environment
+soulsync_env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Node.js
+soulsync-ai/soulsync-frontend/node_modules/
+soulsync-ai/soulsync-frontend/dist/
+soulsync-ai/soulsync-frontend/.vite/
+
+# FAISS vector indexes (auto-generated)
+soulsync-ai/data/vectors/
+
+# Test audio files
+soulsync-ai/data/*.wav
+
+# Old model files
+soulsync-ai/models/*.onnx
+soulsync-ai/models/*.pt
+soulsync-ai/models/*.bin
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

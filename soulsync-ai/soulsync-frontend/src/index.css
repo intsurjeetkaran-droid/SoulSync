@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface-950 text-surface-100 font-sans antialiased;
+  }
+  * {
+    @apply box-border;
+  }
+
+  /* Scrollbar — thin emerald */
+  ::-webkit-scrollbar       { @apply w-1; }
+  ::-webkit-scrollbar-track { @apply bg-surface-900; }
+  ::-webkit-scrollbar-thumb { @apply bg-soul-700 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-soul-600; }
+}
+
+@layer components {
+
+  /* ── Buttons ─────────────────────────────────────────── */
+  .btn-primary {
+    @apply bg-soul-600 hover:bg-soul-500 text-white font-semibold
+           px-4 py-2 rounded-xl transition-all duration-200
+           disabled:opacity-40 disabled:cursor-not-allowed
+           active:scale-95 shadow-md shadow-soul-900/40;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-surface-800 text-surface-400
+           hover:text-white px-3 py-2 rounded-xl
+           transition-all duration-200 active:scale-95;
+  }
+
+  .btn-amber {
+    @apply bg-glow-500 hover:bg-glow-400 text-surface-950 font-semibold
+           px-4 py-2 rounded-xl transition-all duration-200
+           active:scale-95 shadow-md shadow-glow-900/30;
+  }
+
+  /* ── Cards ───────────────────────────────────────────── */
+  .card {
+    @apply bg-surface-900 border border-surface-800 rounded-2xl p-4;
+  }
+
+  .card-glow {
+    @apply bg-surface-900 border border-soul-800/40 rounded-2xl p-4
+           shadow-lg shadow-soul-900/20;
+  }
+
+  /* ── Inputs ──────────────────────────────────────────── */
+  .input-field {
+    @apply bg-surface-800 border border-surface-700 rounded-xl px-4 py-2.5
+           text-surface-100 placeholder-surface-500 outline-none
+           focus:border-soul-500 focus:ring-1 focus:ring-soul-500/50
+           transition-all duration-200 w-full;
+  }
+
+  /* ── Badges ──────────────────────────────────────────── */
+  .badge-emerald {
+    @apply text-xs bg-soul-500/15 text-soul-300 border border-soul-500/25
+           px-2 py-0.5 rounded-full font-medium;
+  }
+
+  .badge-amber {
+    @apply text-xs bg-glow-500/15 text-glow-300 border border-glow-500/25
+           px-2 py-0.5 rounded-full font-medium;
+  }
+}

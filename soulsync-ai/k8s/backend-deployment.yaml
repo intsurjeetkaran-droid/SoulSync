@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: soulsync-backend
+  namespace: soulsync
+  labels:
+    app: soulsync-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: soulsync-backend
+  template:
+    metadata:
+      labels:
+        app: soulsync-backend
+    spec:
+      containers:
+        - name: backend
+          image: soulsync-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: soulsync-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: soulsync-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: soulsync-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: soulsync-config
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: soulsync-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: data-volume
+              mountPath: /app/data
+            - name: models-volume
+              mountPath: /app/models
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu:    "500m"
+            limits:
+              memory: "4Gi"
+              cpu:    "2000m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 90
+            periodSeconds: 30
+      volumes:
+        - name: data-volume
+          emptyDir: {}
+        - name: models-volume
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: soulsync-backend-service
+  namespace: soulsync
+spec:
+  selector:
+    app: soulsync-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP
