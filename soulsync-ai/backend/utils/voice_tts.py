@@ -1,110 +1,129 @@
 """
 SoulSync AI - Text to Speech (TTS)
-Converts AI response text → spoken audio using pyttsx3.
-
-pyttsx3 works fully offline on Windows using
-the built-in SAPI5 voice engine — no API key needed.
-
-Features:
-  - speak_text()     : speak text aloud directly
-  - save_to_file()   : save speech to a WAV file
-  - list_voices()    : show available system voices
-  - set_voice()      : change voice (male/female)
+Primary  : edge-tts  → Microsoft Neerja (Indian English female, neural)
+Fallback : pyttsx3   → Microsoft Zira (US English female, offline)
 """
 
-import pyttsx3
 import os
 import tempfile
+import asyncio
+import logging
 
-# ─── Initialize TTS Engine (once) ─────────────────────────
-_engine = pyttsx3.init()
+logger = logging.getLogger("soulsync.tts")
 
-# Default settings
-_engine.setProperty("rate",   165)   # speed (words per minute)
-_engine.setProperty("volume", 0.95)  # volume (0.0 to 1.0)
+# ── edge-tts (primary — Neerja, Indian English) ───────────
+EDGE_VOICE = "en-IN-NeerjaNeural"   # Indian English female
 
-# Try to set a pleasant voice
-def _set_default_voice():
-    voices = _engine.getProperty("voices")
-    if voices:
-        # Prefer female voice if available (index 1 on most Windows)
-        if len(voices) > 1:
-            _engine.setProperty("voice", voices[1].id)
-        else:
-            _engine.setProperty("voice", voices[0].id)
+try:
+    import edge_tts
+    EDGE_AVAILABLE = True
+    logger.info(f"[TTS] edge-tts ready — voice: {EDGE_VOICE}")
+    print(f"[TTS] edge-tts ready — voice: {EDGE_VOICE}")
+except ImportError:
+    EDGE_AVAILABLE = False
+    logger.warning("[TTS] edge-tts not available, falling back to pyttsx3")
+    print("[TTS] edge-tts not available, falling back to pyttsx3")
 
-_set_default_voice()
-print("[TTS] pyttsx3 engine ready.")
+# ── pyttsx3 (fallback — Zira, offline) ───────────────────
+_pyttsx3_engine   = None
+_FEMALE_VOICE_ID  = None
+
+def _init_pyttsx3():
+    global _pyttsx3_engine, _FEMALE_VOICE_ID
+    try:
+        import pyttsx3
+        _pyttsx3_engine = pyttsx3.init()
+        _pyttsx3_engine.setProperty("rate",   160)
+        _pyttsx3_engine.setProperty("volume", 0.97)
+
+        voices = _pyttsx3_engine.getProperty("voices")
+        female_kw = ["zira", "female", "woman", "hazel", "susan",
+                     "eva", "aria", "jenny", "natasha", "linda"]
+        for v in voices:
+            if any(kw in v.name.lower() for kw in female_kw):
+                _FEMALE_VOICE_ID = v.id
+                _pyttsx3_engine.setProperty("voice", v.id)
+                print(f"[TTS] pyttsx3 fallback voice: {v.name}")
+                return
+        if voices:
+            _FEMALE_VOICE_ID = voices[min(1, len(voices)-1)].id
+            _pyttsx3_engine.setProperty("voice", _FEMALE_VOICE_ID)
+    except Exception as e:
+        print(f"[TTS] pyttsx3 init failed: {e}")
+
+if not EDGE_AVAILABLE:
+    _init_pyttsx3()
+
+print("[TTS] engine ready.")
 
 
-# ─── Speak Text ───────────────────────────────────────────
+# ── save_to_file (async-safe) ─────────────────────────────
 
-def speak_text(text: str):
-    """
-    Speak text aloud through the system speakers.
-
-    Args:
-        text: the text to speak
-    """
-    if not text or not text.strip():
-        return
-
-    # Limit length to avoid very long speeches
-    text = text[:500]
-
-    _engine.say(text)
-    _engine.runAndWait()
+async def _edge_save(text: str, output_path: str):
+    """Generate WAV via edge-tts (Neerja)."""
+    communicate = edge_tts.Communicate(text[:600], EDGE_VOICE)
+    await communicate.save(output_path)
 
 
-# ─── Save to Audio File ───────────────────────────────────
+def _pyttsx3_save(text: str, output_path: str):
+    """Generate WAV via pyttsx3 (Zira fallback)."""
+    if _FEMALE_VOICE_ID:
+        _pyttsx3_engine.setProperty("voice", _FEMALE_VOICE_ID)
+    _pyttsx3_engine.save_to_file(text[:500], output_path)
+    _pyttsx3_engine.runAndWait()
+
 
 def save_to_file(text: str, output_path: str = None) -> str:
     """
-    Save speech to a WAV file instead of playing it.
-
-    Args:
-        text        : text to convert
-        output_path : where to save (auto-generates temp file if None)
-
-    Returns:
-        path to the saved audio file
+    Convert text to speech and save as audio file.
+    Uses Neerja (edge-tts) if available, else Zira (pyttsx3).
+    Returns path to the saved file.
     """
     if not output_path:
-        tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        tmp = tempfile.NamedTemporaryFile(suffix=".mp3" if EDGE_AVAILABLE else ".wav",
+                                          delete=False)
         output_path = tmp.name
         tmp.close()
 
-    text = text[:500]
-    _engine.save_to_file(text, output_path)
-    _engine.runAndWait()
+    if EDGE_AVAILABLE:
+        # edge-tts is async — run it in a new event loop
+        try:
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(_edge_save(text, output_path))
+            loop.close()
+            return output_path
+        except Exception as e:
+            logger.error(f"[TTS] edge-tts failed: {e}, falling back to pyttsx3")
+            if not _pyttsx3_engine:
+                _init_pyttsx3()
 
+    # pyttsx3 fallback
+    _pyttsx3_save(text, output_path)
     return output_path
 
 
-# ─── List Available Voices ────────────────────────────────
+def speak_text(text: str):
+    """Speak text directly (used for local testing only)."""
+    path = save_to_file(text)
+    try:
+        import playsound
+        playsound.playsound(path)
+    except Exception:
+        pass
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
 
 def list_voices() -> list:
-    """Return list of available system voices."""
-    voices = _engine.getProperty("voices")
-    return [
-        {"id": v.id, "name": v.name, "languages": v.languages}
-        for v in voices
-    ]
+    """Return available voices info."""
+    if EDGE_AVAILABLE:
+        return [{"id": EDGE_VOICE, "name": "Microsoft Neerja (Indian English Female)",
+                 "engine": "edge-tts"}]
+    voices = _pyttsx3_engine.getProperty("voices") if _pyttsx3_engine else []
+    return [{"id": v.id, "name": v.name, "engine": "pyttsx3"} for v in voices]
 
 
-# ─── Set Voice ────────────────────────────────────────────
-
-def set_voice(voice_index: int = 0):
-    """
-    Set voice by index.
-    0 = first voice (usually male)
-    1 = second voice (usually female)
-    """
-    voices = _engine.getProperty("voices")
-    if voice_index < len(voices):
-        _engine.setProperty("voice", voices[voice_index].id)
-
-
-def set_rate(rate: int = 165):
-    """Set speech rate (words per minute). Default: 165."""
-    _engine.setProperty("rate", rate)
+def set_rate(rate: int = 160):
+    if _pyttsx3_engine:
+        _pyttsx3_engine.setProperty("rate", rate)

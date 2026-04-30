@@ -8,6 +8,7 @@ Written for: Anyone who wants to understand what SoulSync AI is,
              how it works, and what it can do for you.
 
 Built on   : April 23, 2026
+Updated on : April 29, 2026
 Built by   : Surjeet (with Kiro AI as development assistant)
 
 ================================================================================
@@ -23,8 +24,8 @@ Think of it like a very smart digital friend who:
   - Stores structured facts about you (name, goals, job, hobbies)
   - Helps you manage your daily tasks automatically
   - Gives you smart advice based on your habits and patterns
-  - Talks to you through text (voice mode currently disabled)
-  - Supports multiple languages: English, Hindi, and Hinglish
+  - Talks to you through text OR full voice mode (like Alexa)
+  - Responds in a natural Indian female voice (Microsoft Neerja)
   - Gets smarter and more personal the more you use it
   - Supports multiple users — each person has their own private memory
 
@@ -71,18 +72,22 @@ Here is the complete journey of what happens when you talk to SoulSync AI.
 Explained in simple steps:
 
 --------------------------------------------------------------------------------
-STEP 1: YOU SEND A MESSAGE
+STEP 1: YOU SEND A MESSAGE (TEXT OR VOICE)
 --------------------------------------------------------------------------------
 
 You open the SoulSync AI app on your browser.
-You type something like:
 
-  "I had a really tough day today. I was stressed about work
-   and I skipped my gym session."
+  TEXT MODE:
+  You type something like:
+    "I had a really tough day today. I was stressed about work
+     and I skipped my gym session."
 
-You can type in English, Hindi (Devanagari script), or Hinglish
-(Hindi words in Roman script). SoulSync will automatically detect
-your language and respond in the same language.
+  VOICE MODE (Alexa-style):
+  You click the "Voice" button in the header.
+  A full-screen dark interface appears with a large animated sphere.
+  You tap the sphere — it starts listening.
+  You speak naturally — just like talking to Alexa.
+  No typing needed. No buttons to press between turns.
 
 --------------------------------------------------------------------------------
 STEP 2: INTENT IS DETECTED
@@ -110,31 +115,7 @@ This is called INTENT DETECTION. It makes SoulSync much smarter
 than a regular chatbot that treats all messages the same way.
 
 --------------------------------------------------------------------------------
-STEP 3: LANGUAGE IS DETECTED
---------------------------------------------------------------------------------
-
-SoulSync automatically detects which language you are using:
-
-  ENGLISH:
-    "I had a tough day" → Detected as English
-    SoulSync responds in English
-
-  HINDI (Devanagari):
-    "मेरा नाम रोहित है" → Detected as Hindi
-    SoulSync responds in Hindi (Devanagari script)
-
-  HINGLISH (Hindi in Roman script):
-    "Mera naam Rohit hai" → Detected as Hinglish
-    SoulSync responds in Hinglish (natural Hindi-English mix)
-
-This happens instantly without any API calls. SoulSync uses pattern
-matching to identify Devanagari characters and common Hinglish words.
-
-The language instruction is then added to the AI's system prompt,
-ensuring it responds in your preferred language naturally.
-
---------------------------------------------------------------------------------
-STEP 4: YOUR MESSAGE IS UNDERSTOOD AND STORED
+STEP 3: YOUR MESSAGE IS UNDERSTOOD AND STORED
 --------------------------------------------------------------------------------
 
 SoulSync reads your message and does two things at the same time:
@@ -185,26 +166,15 @@ STEP 5: AI GENERATES A PERSONALIZED RESPONSE
 SoulSync uses the Groq API (llama-3.3-70b-versatile model) to generate
 a response. This is a powerful cloud AI that responds in under 1 second.
 
-The AI automatically responds in the same language you used:
-  - If you wrote in English, it responds in English
-  - If you wrote in Hindi, it responds in Hindi (Devanagari)
-  - If you wrote in Hinglish, it responds in Hinglish
-
 Unlike a normal chatbot, SoulSync's response is enriched with:
   - Your stored personal facts (name, goals, job, etc.)
   - Your past memories retrieved by semantic search
   - Your current situation
-  - Language-aware responses that feel natural
 
 So instead of a generic "That's tough!", SoulSync might say:
   "You've mentioned feeling tired a few times this week, Rohit.
    It seems like stress is affecting your sleep and gym routine.
    Have you tried a short 10-minute walk instead on tough days?"
-
-Or in Hinglish:
-  "Rohit, tumne is week mein kai baar tired feel kiya hai.
-   Lagta hai stress tumhari sleep aur gym routine ko affect kar raha hai.
-   Kya tumne tough days pe 10-minute walk try kiya hai?"
 
 --------------------------------------------------------------------------------
 STEP 6: TASKS ARE AUTO-DETECTED
@@ -221,6 +191,7 @@ Examples:
   → SoulSync creates: Task "Finish project" | Due: Friday | Priority: High
 
 You don't have to manually add tasks. SoulSync listens and does it for you.
+This works in BOTH text mode and voice mode.
 
 --------------------------------------------------------------------------------
 STEP 7: SMART SUGGESTIONS ARE GENERATED
@@ -239,7 +210,29 @@ Over time, SoulSync analyzes your patterns using data science tools
   Suggestion: "Schedule more time with friends — it boosts your mood!"
 
 --------------------------------------------------------------------------------
-STEP 7: EVERYTHING IS DISPLAYED IN THE APP
+STEP 8: RESPONSE IS SPOKEN BACK (Voice Mode)
+--------------------------------------------------------------------------------
+
+In Voice Mode, SoulSync speaks its response back to you using
+Microsoft Neerja — a natural Indian English female neural voice.
+
+  AI Response text → edge-tts (Microsoft Neerja) → MP3 audio → your speakers
+
+The sphere turns VIOLET while speaking, with radiating rings animation.
+After speaking, the microphone automatically reopens and SoulSync
+listens for your next message. This creates a natural back-and-forth
+voice conversation — exactly like talking to Alexa.
+
+Voice Mode sessions last up to 10 minutes. A small timer arc in the
+top-right corner shows how much time is left.
+
+The sphere changes color based on what it is doing:
+  - Green  : listening to you
+  - Amber  : thinking (processing your message)
+  - Violet : speaking the response
+
+--------------------------------------------------------------------------------
+STEP 9: EVERYTHING IS DISPLAYED IN THE APP (Text Mode)
 --------------------------------------------------------------------------------
 
 The SoulSync app (built with React and Tailwind CSS) shows you:
@@ -266,7 +259,7 @@ The SoulSync app (built with React and Tailwind CSS) shows you:
                          THE COMPLETE SYSTEM — ALL PARTS
 ================================================================================
 
-SoulSync AI is made of 11 modules working together:
+SoulSync AI is made of 12 modules working together:
 
   MODULE 1: CORE AI
   -----------------
@@ -275,17 +268,8 @@ SoulSync AI is made of 11 modules working together:
   Cloud-based AI that responds in under 1 second.
   Has a built-in persona — knows it is SoulSync AI,
   knows when it was built, and responds warmly.
-  Supports multi-language responses (English, Hindi, Hinglish).
 
-  MODULE 2: LANGUAGE DETECTION
-  ----------------------------
-  Automatically detects the language of user messages.
-  Supports: English, Hindi (Devanagari), and Hinglish (Roman script).
-  Uses pattern matching for Devanagari characters and common Hinglish words.
-  No API calls needed — instant detection.
-  Ensures AI responds in the same language as the user.
-
-  MODULE 3: MEMORY SYSTEM
+  MODULE 2: MEMORY SYSTEM
   -----------------------
   Stores every conversation in a PostgreSQL database.
   Like a permanent diary that never forgets.
@@ -295,13 +279,13 @@ SoulSync AI is made of 11 modules working together:
     - activities: structured data extracted from messages
     - tasks     : all your tasks
 
-  MODULE 4: MEMORY PROCESSING
+  MODULE 3: MEMORY PROCESSING
   ---------------------------
   Reads your raw messages and extracts structured information.
   Detects: emotion, activity, status, productivity level.
   Saves this structured data for pattern analysis later.
 
-  MODULE 5: RETRIEVAL (RAG)
+  MODULE 4: RETRIEVAL (RAG)
   -------------------------
   Before every response, searches your past memories
   to find the most relevant ones.
@@ -309,40 +293,59 @@ SoulSync AI is made of 11 modules working together:
   memories that are semantically similar to what you just said.
   This is what makes SoulSync feel like it truly remembers you.
 
-  MODULE 6: SUGGESTION ENGINE
+  MODULE 5: SUGGESTION ENGINE
   ---------------------------
   Analyzes your activity data using Pandas (data science tool).
   Detects patterns in your emotions, habits, and productivity.
   Generates personalized suggestions and advice.
 
-  MODULE 7: TASK MODULE
+  MODULE 6: TASK MODULE
   ---------------------
   Automatically detects tasks from your messages.
   Lets you create, complete, and delete tasks.
   Tasks are sorted by priority (High, Medium, Low).
   Shows due dates and whether the task was auto-created.
+  Works in both text mode and voice mode.
 
-  MODULE 8: FRONTEND (User Interface)
+  MODULE 7: VOICE MODE (Alexa-style)
+  -----------------------------------
+  Full-screen dark interface with animated sphere.
+  Tap sphere → listens → thinks → speaks → listens again.
+  No chat bubbles, no sidebar — pure voice experience.
+  Speech-to-Text: Web Speech API (browser, instant, no upload).
+  Text-to-Speech: Microsoft Neerja via edge-tts (Indian English female).
+  All features work in voice mode: memory, tasks, insights, personal info.
+  10-minute sessions with auto-restart option.
+  Mute button to disable AI voice if needed.
+
+  MODULE 8: VOICE TTS ENGINE
+  --------------------------
+  Primary  : edge-tts → Microsoft Neerja Neural (Indian English female)
+  Fallback : pyttsx3  → Microsoft Zira (US English female, offline)
+  Neerja is a natural-sounding neural voice — not robotic.
+  Runs via Microsoft's cloud TTS service (free, no API key needed).
+
+  MODULE 9: FRONTEND (User Interface)
   ------------------------------------
   The app you see in your browser.
   Built with React (a popular web framework) and Tailwind CSS
   (for beautiful dark-themed design).
-  Features: Chat window, Task panel, Insights panel.
+  Features: Chat window, Task panel, Insights panel, Voice Mode button.
 
-  MODULE 9: AUTHENTICATION
-  ------------------------
+  MODULE 10: AUTHENTICATION
+  -------------------------
   Secure user authentication using JWT tokens.
   Password hashing with bcrypt for security.
   7-day token expiration for convenience.
   Each user has their own private memory space.
 
-  MODULE 10: OPTIMIZATION
+  MODULE 11: OPTIMIZATION
   -----------------------
   Smart caching system for repeated questions.
   Instant responses for common queries without API calls.
   Direct-answer shortcuts for identity questions.
 
-  MODULE 11: DEPLOYMENT
+  MODULE 12: DEPLOYMENT
   ---------------------
   Packages everything into Docker containers.
   Can be deployed on any server or cloud platform.
@@ -356,20 +359,17 @@ Here is every technology used in SoulSync AI, explained simply:
 
   PYTHON
   ------
-  The main programming language. Like the language SoulSync
-  thinks and works in.
+  The main programming language.
 
   GROQ API
   --------
   Cloud-based AI service that powers SoulSync's responses.
-  Uses llama-3.3-70b-versatile model for fast, intelligent responses.
-  Responds in under 1 second.
+  Uses llama-3.3-70b-versatile model. Responds in under 1 second.
 
   FASTAPI
   -------
   The web server that handles all requests.
-  When you send a message, FastAPI receives it, processes it,
-  and sends back the response. Very fast and reliable.
+  Very fast and reliable.
 
   POSTGRESQL
   ----------
@@ -384,31 +384,48 @@ Here is every technology used in SoulSync AI, explained simply:
   SENTENCE-TRANSFORMERS
   ---------------------
   Converts text into numbers (vectors) so FAISS can search them.
-  Like translating words into a language that computers can compare.
 
   PANDAS & NUMPY
   --------------
   Data science tools used to analyze your activity patterns.
-  Like a smart spreadsheet that finds trends in your data.
 
   REACT
   -----
   The technology used to build the user interface (the app).
-  Makes the chat window, task panel, and insights panel.
 
   TAILWIND CSS
   ------------
   Makes the app look beautiful with a dark, modern design.
 
+  FRAMER MOTION
+  -------------
+  Powers all animations — the animated sphere in Voice Mode,
+  page transitions, and smooth UI effects.
+
+  WEB SPEECH API
+  --------------
+  Built into Chrome browser. Converts your voice to text instantly.
+  No upload needed — works in real-time.
+
+  EDGE-TTS (Microsoft)
+  --------------------
+  Converts SoulSync's text responses to speech using Microsoft's
+  neural voices. Uses Neerja — a natural Indian English female voice.
+  Free to use, no API key required.
+
+  PYTTSX3 (Fallback)
+  ------------------
+  Offline TTS fallback if edge-tts is unavailable.
+  Uses Microsoft Zira (US English female voice).
+
   OPENAI WHISPER
   --------------
-  Advanced speech recognition model (currently not in use).
-  Available for future voice feature implementation.
+  Advanced speech recognition for audio file uploads.
+  Available as a backup STT option.
 
   DOCKER
   ------
   Packages the entire application into containers.
-  Makes it easy to run SoulSync on any computer or server.
 
   KUBERNETES
   ----------
@@ -421,111 +438,103 @@ Here is every technology used in SoulSync AI, explained simply:
 
 To run SoulSync AI on your computer, you need two terminals open:
 
+  FIRST TIME SETUP:
+  -----------------
+  Step 1: Create the Python virtual environment
+          Command: python -m venv soulsync_env
+
+  Step 2: Activate it
+          Windows CMD:        soulsync_env\Scripts\activate
+          Windows PowerShell: .\soulsync_env\Scripts\Activate.ps1
+
+  Step 3: Install Python packages
+          Command: pip install -r soulsync-ai\requirements.txt
+
+  Step 4: Create the database (PostgreSQL must be running)
+          Command: psql -U postgres -c "CREATE DATABASE soulsync_db;"
+
+  Step 5: Seed demo users (one time only)
+          Command: cd soulsync-ai
+                   python scripts\seed_users.py
+
+  Step 6: Install frontend packages
+          Command: cd soulsync-ai\soulsync-frontend
+                   npm install
+
   TERMINAL 1 — Start the Backend (AI Brain):
   -------------------------------------------
-  RECOMMENDED — Use the startup script (enforces venv automatically):
+  Option A (recommended):
+    PowerShell: powershell -ExecutionPolicy Bypass -File soulsync-ai\start_backend.ps1
+    CMD:        soulsync-ai\start_backend.bat
 
-    PowerShell:
-      powershell -ExecutionPolicy Bypass -File soulsync-ai\start_backend.ps1
-
-    CMD:
-      soulsync-ai\start_backend.bat
-
-  The script will:
-    1. Check the virtual environment exists at soulsync_env\
-    2. Verify all required packages are installed inside it
-    3. Start the server using ONLY the venv Python
-    4. Refuse to start if venv is missing or packages are absent
-
-  MANUAL (if you prefer):
-    Step 1: Activate the virtual environment
-            Command: .\soulsync_env\Scripts\activate
-
-    Step 2: Go to the project folder
-            Command: cd soulsync-ai
-
-    Step 3: Start the server
-            Command: python -m uvicorn backend.main:app --reload --port 8000
+  Option B (manual):
+    .\soulsync_env\Scripts\activate
+    cd soulsync-ai
+    python -m uvicorn backend.main:app --reload --port 8000
 
   You will see:
-    [OK] Venv Python : ...\soulsync_env\Scripts\python.exe
-    [OK] All packages verified
+    [TTS] edge-tts ready — voice: en-IN-NeerjaNeural
     [Schema] All tables created successfully.
     INFO: Application startup complete.
 
   Backend is running at: http://localhost:8000
   API documentation at:  http://localhost:8000/docs
 
-  IMPORTANT: Never run the backend with system Python.
-             Always use soulsync_env. The startup scripts enforce this.
-
   TERMINAL 2 — Start the Frontend (The App):
   -------------------------------------------
-  Step 1: Go to the frontend folder
-          Command: cd soulsync-ai\soulsync-frontend
-
-  Step 2: Start the app
-          Command: npm run dev
+  Command: cd soulsync-ai\soulsync-frontend
+           npm run dev
 
   You will see: "Local: http://localhost:5173"
 
-  OPEN YOUR BROWSER:
-  ------------------
+  OPEN YOUR BROWSER (use Chrome for Voice Mode):
+  -----------------------------------------------
   Go to: http://localhost:5173
-  You will see the SoulSync AI chat interface.
-
-  OPTIONAL — View API Documentation:
-  ------------------------------------
-  Go to: http://localhost:8000/docs
-  This shows all the available API endpoints with descriptions.
 
 ================================================================================
                               WHAT YOU CAN DO
 ================================================================================
 
-Here are things you can do with SoulSync AI right now:
+  1. CHAT (Text Mode)
+     Type anything — how your day was, how you feel, what you need.
+     SoulSync responds warmly and remembers everything.
 
-  1. CHAT
-     Just type anything. How your day was, how you feel,
-     what you are thinking about. SoulSync will respond
-     warmly and remember everything.
+  2. VOICE MODE (Alexa-style)
+     Click the "Voice" button in the header.
+     A full-screen dark interface with an animated sphere appears.
+     Tap the sphere to start.
+     Speak naturally — SoulSync listens, thinks, and speaks back
+     in Neerja's Indian female voice through your speakers.
+     The mic reopens automatically after each response.
+     All commands work in voice mode:
+       - "My name is Rohit" → saves to memory
+       - "Remind me to call mom tomorrow" → creates task
+       - "What is my goal?" → AI speaks the answer back
+       - "I'm feeling stressed" → AI responds empathetically
 
-  2. ASK ABOUT YOUR HISTORY
+  3. ASK ABOUT YOUR HISTORY
      "What have I been feeling this week?"
      "Do you remember what I told you yesterday?"
-     SoulSync will recall relevant past memories.
 
-  3. CREATE TASKS AUTOMATICALLY
-     Just mention something you need to do:
+  4. CREATE TASKS AUTOMATICALLY
      "I need to submit my assignment by Thursday"
-     SoulSync will create the task automatically.
+     SoulSync creates the task automatically.
 
-  4. GET SUGGESTIONS
+  5. GET SUGGESTIONS
      Click the "Insights" tab in the sidebar.
-     SoulSync will show your emotion patterns and
-     give you personalized suggestions.
+     See your emotion patterns and personalized suggestions.
 
-  5. MANAGE TASKS
+  6. MANAGE TASKS
      Click the "Tasks" tab in the sidebar.
-     See all your tasks, mark them done, or add new ones.
+     See all tasks, mark them done, or add new ones.
 
-  6. ASK IDENTITY QUESTIONS
-     "Who are you?" → SoulSync will introduce itself
+  7. ASK IDENTITY QUESTIONS
+     "Who are you?" → SoulSync introduces itself
      "When were you built?" → April 23, 2026
-     "How do you feel?" → SoulSync will respond personally
-
-  7. CHAT IN MULTIPLE LANGUAGES
-     Type in English: "I'm feeling stressed today"
-     Type in Hindi: "मुझे आज तनाव हो रहा है"
-     Type in Hinglish: "Aaj mujhe bahut tension hai"
-     SoulSync will automatically detect your language and respond
-     in the same language naturally.
 
   8. ASK ABOUT YOUR EARLIEST MEMORIES
      "What was the first thing I shared with you?"
-     "What was my first experience?"
-     SoulSync will retrieve your oldest messages from the database
-     and show them with dates.
+     SoulSync retrieves your oldest messages with dates.
 
 ================================================================================
                            SOULSYNC AI — KEY FACTS
@@ -534,6 +543,7 @@ Here are things you can do with SoulSync AI right now:
   Full Name         : SoulSync AI
   Type              : Personal AI Companion System
   Built On          : April 23, 2026
+  Updated On        : April 29, 2026
   Built By          : Surjeet (with Kiro AI as development assistant)
   AI Model          : Groq API — llama-3.3-70b-versatile (cloud, sub-second)
   Embedding Model   : all-MiniLM-L6-v2 (384-dim, local)
@@ -541,15 +551,16 @@ Here are things you can do with SoulSync AI right now:
   Backend           : Python 3.11 + FastAPI
   Frontend          : React 18 + Vite + Tailwind CSS + Framer Motion
   Auth              : JWT (7-day tokens) + bcrypt password hashing
-  Language Support  : English, Hindi (Devanagari), Hinglish (Roman script)
-  Language Detection: Pattern-based (instant, no API calls)
-  Voice Mode        : Currently disabled (Whisper available for future use)
+  Voice STT         : Web Speech API (Chrome browser, real-time)
+  Voice TTS         : edge-tts → Microsoft Neerja (Indian English female neural)
+  Voice TTS Fallback: pyttsx3 → Microsoft Zira (offline)
+  Voice Mode        : Alexa-style — full-screen sphere, no chat bubbles
   Memory Type       : Short-term (5 turns) + Long-term (FAISS) + Structured (DB)
   Recall Range      : Unlimited — memories stored permanently, no expiry
-  Modules           : 11 (all completed)
+  Modules           : 12 (all completed)
   API Endpoints     : 25+
-  Demo Users        : 5 (pre-seeded, see credentials.txt)
-  Venv              : soulsync_env (enforced by startup scripts)
+  Demo Users        : 10 (pre-seeded, see credentials.txt)
+  Venv              : soulsync_env (create locally after unzip)
 
 ================================================================================
                               PRIVACY & SAFETY
@@ -559,8 +570,9 @@ Here are things you can do with SoulSync AI right now:
   ---------------------
   All your conversations, memories, and tasks are stored on
   YOUR computer in YOUR local PostgreSQL database.
-  Only AI generation requests are sent to Groq API (cloud service).
-  Your personal data and conversation history remain on your machine.
+  Only AI generation requests are sent to Groq API (cloud).
+  TTS audio is generated via Microsoft edge-tts (no personal data sent).
+  Your conversation history never leaves your machine.
 
   YOU ARE IN CONTROL
   ------------------
@@ -592,12 +604,11 @@ Today SoulSync can:
   - Understand your emotions and patterns
   - Manage your tasks automatically
   - Give you personalized advice
-  - Communicate in English, Hindi, and Hinglish
-  - Detect your language automatically
+  - Talk to you with a natural Indian female voice (Neerja)
+  - Provide a hands-free Alexa-style voice experience
 
 Tomorrow SoulSync will:
-  - Add voice conversation capabilities
-  - Detect emotions from voice tone
+  - Detect emotions from your voice tone
   - Build a deep personality model of you
   - Connect with your calendar and apps
   - Generate personalized life plans
@@ -607,19 +618,19 @@ Tomorrow SoulSync will:
                          SUMMARY IN ONE PARAGRAPH
 ================================================================================
 
-SoulSync AI is a personal AI companion built on April 23, 2026 by Surjeet.
-It uses Groq's llama-3.3-70b-versatile model (cloud-based) to have natural
-conversations with you in English, Hindi, or Hinglish. Every conversation is
-stored in a PostgreSQL database so it never forgets. Before each response, it
-searches your past memories using FAISS vector search to give you personalized
-answers. It automatically detects tasks from your messages, analyzes your
-emotional patterns using data science, and gives you smart suggestions. The
-app has a beautiful dark-themed interface with a chat window, task manager,
-and insights panel. Multi-language support is fully integrated with automatic
-language detection. Voice mode is currently disabled but available for future
-implementation. Your data stays on your local machine — only AI generation
-requests are sent to the cloud. SoulSync AI is designed to be your second
-brain, your personal guide, and your AI companion.
+SoulSync AI is a personal AI companion built on April 23, 2026 by Surjeet,
+updated on April 29, 2026. It uses Groq's llama-3.3-70b-versatile model to
+have natural conversations with you. Every conversation is stored in a
+PostgreSQL database so it never forgets. Before each response, it searches
+your past memories using FAISS vector search to give you personalized answers.
+It automatically detects tasks from your messages, analyzes your emotional
+patterns using data science, and gives you smart suggestions. You can talk to
+it by typing or by voice — Voice Mode works exactly like Alexa: tap the sphere,
+speak, and SoulSync responds in Neerja's natural Indian English female voice
+through your speakers, then listens again automatically. The app has a
+beautiful dark-themed interface with a chat window, task manager, and insights
+panel. Your data stays on your local machine. SoulSync AI is designed to be
+your second brain, your personal guide, and your AI companion.
 
 ================================================================================
                               END OF DETAILS

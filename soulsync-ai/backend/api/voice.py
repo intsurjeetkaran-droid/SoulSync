@@ -11,6 +11,8 @@ import os
 import tempfile
 import shutil
 import logging
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse, Response
@@ -18,6 +20,9 @@ from pydantic import BaseModel
 from typing import Optional
 
 logger = logging.getLogger("soulsync.voice")
+
+# Thread pool dedicated to TTS — pyttsx3 needs its own thread (Windows COM/SAPI5)
+_tts_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="tts")
 
 try:
     from backend.utils.voice_stt import transcribe_file
@@ -69,7 +74,7 @@ class SpeakRequest(BaseModel):
 async def text_to_speech(request: SpeakRequest):
     """
     Convert text to speech and return WAV audio bytes.
-    Used by the Voice Mode UI to speak AI responses aloud.
+    Runs pyttsx3 in a dedicated thread — required for Windows COM/SAPI5.
     """
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty.")
@@ -79,16 +84,24 @@ async def text_to_speech(request: SpeakRequest):
 
     tmp_path = None
     try:
-        tmp_path = save_to_file(request.text)
-        # Read file and return as bytes so temp file can be cleaned up
+        # Run blocking TTS in dedicated thread (pyttsx3 needs its own COM thread)
+        loop     = asyncio.get_event_loop()
+        tmp_path = await loop.run_in_executor(_tts_executor, save_to_file, request.text)
+
         with open(tmp_path, "rb") as f:
             audio_bytes = f.read()
+
+        # edge-tts produces MP3, pyttsx3 produces WAV
+        mime = "audio/mpeg" if tmp_path.endswith(".mp3") else "audio/wav"
+        fname = "soulsync_response.mp3" if tmp_path.endswith(".mp3") else "soulsync_response.wav"
+
         return Response(
             content=audio_bytes,
-            media_type="audio/wav",
-            headers={"Content-Disposition": "inline; filename=soulsync_response.wav"}
+            media_type=mime,
+            headers={"Content-Disposition": f"inline; filename={fname}"}
         )
     except Exception as e:
+        logger.error(f"[TTS] Error: {e}")
         raise HTTPException(status_code=500, detail=f"TTS error: {str(e)}")
     finally:
         if tmp_path and os.path.exists(tmp_path):
@@ -133,7 +146,8 @@ async def voice_chat(
 
         save_conversation(user_id, user_text, response_text)
 
-        tmp_output = save_to_file(response_text)
+        loop       = asyncio.get_event_loop()
+        tmp_output = await loop.run_in_executor(_tts_executor, save_to_file, response_text)
         with open(tmp_output, "rb") as f:
             audio_bytes = f.read()
 

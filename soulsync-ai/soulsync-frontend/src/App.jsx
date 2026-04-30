@@ -165,7 +165,7 @@ export default function App() {
         userId={user?.name || user?.email?.split("@")[0] || "User"}
         isConnected={isConnected}
         onLogout={handleLogout}
-        onVoiceMode={() => setVoiceComingSoon(true)}
+        onVoiceMode={() => setVoiceModeOpen(true)}
         onMobileDrawer={() => setMobileDrawer(v => !v)}
         user={user}
       />

@@ -1,211 +1,202 @@
 /**
- * SoulSync AI — Voice Mode
+ * SoulSync AI — Voice Mode (Alexa-style)
  *
- * Full-screen overlay with animated sphere.
- * - Web Speech API for STT (no upload, instant)
- * - /api/v1/chat for AI response (full pipeline: memory, tasks, insights)
- * - /api/v1/voice/speak for TTS (pyttsx3 WAV)
- * - 10-minute session timer
- * - Animated sphere reacts to listening / thinking / speaking states
+ * Pure voice experience — no chat bubbles, no sidebar.
+ * Tap sphere → it listens → thinks → speaks back → listens again.
+ * Exactly like talking to Alexa.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mic, MicOff, Volume2, VolumeX, RotateCcw } from "lucide-react";
+import { X, Volume2, VolumeX, RotateCcw } from "lucide-react";
 import { sendMessage } from "../api/soulsync";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const BASE = "http://localhost:8000/api/v1";
-const SESSION_LIMIT = 10 * 60; // 10 minutes in seconds
+const BASE          = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const SESSION_LIMIT = 10 * 60;
 
-// ── States ────────────────────────────────────────────────
 const STATE = {
-  IDLE      : "idle",       // waiting to start
-  LISTENING : "listening",  // mic open, user speaking
-  THINKING  : "thinking",   // sent to AI, waiting
-  SPEAKING  : "speaking",   // AI audio playing
-  PAUSED    : "paused",     // user paused mid-session
-  EXPIRED   : "expired",    // 10 min limit reached
+  IDLE      : "idle",
+  LISTENING : "listening",
+  THINKING  : "thinking",
+  SPEAKING  : "speaking",
+  PAUSED    : "paused",
+  EXPIRED   : "expired",
 };
 
-// ── Sphere color per state ────────────────────────────────
 const SPHERE_COLORS = {
-  idle     : { from: "#059669", to: "#047857", glow: "rgba(16,185,129,0.3)"  },
-  listening: { from: "#10b981", to: "#34d399", glow: "rgba(52,211,153,0.6)"  },
-  thinking : { from: "#f59e0b", to: "#fbbf24", glow: "rgba(251,191,36,0.5)"  },
-  speaking : { from: "#8b5cf6", to: "#a78bfa", glow: "rgba(167,139,250,0.5)" },
-  paused   : { from: "#6b7280", to: "#9ca3af", glow: "rgba(156,163,175,0.3)" },
-  expired  : { from: "#ef4444", to: "#f87171", glow: "rgba(248,113,113,0.4)" },
+  idle     : { from: "#059669", to: "#047857", glow: "rgba(16,185,129,0.25)" },
+  listening: { from: "#10b981", to: "#34d399", glow: "rgba(52,211,153,0.55)" },
+  thinking : { from: "#f59e0b", to: "#fbbf24", glow: "rgba(251,191,36,0.45)" },
+  speaking : { from: "#8b5cf6", to: "#a78bfa", glow: "rgba(167,139,250,0.55)"},
+  paused   : { from: "#6b7280", to: "#9ca3af", glow: "rgba(156,163,175,0.2)" },
+  expired  : { from: "#ef4444", to: "#f87171", glow: "rgba(248,113,113,0.35)"},
 };
 
-const STATE_LABEL = {
+const STATUS_TEXT = {
   idle     : "Tap to start",
   listening: "Listening…",
   thinking : "Thinking…",
   speaking : "Speaking…",
-  paused   : "Paused",
-  expired  : "Session ended",
+  paused   : "Paused — tap to resume",
+  expired  : "Session ended — tap to restart",
 };
 
 // ── Animated Sphere ───────────────────────────────────────
 function Sphere({ state, onClick }) {
-  const colors = SPHERE_COLORS[state] || SPHERE_COLORS.idle;
-  const isActive = state === STATE.LISTENING || state === STATE.SPEAKING;
-  const isThinking = state === STATE.THINKING;
+  const c         = SPHERE_COLORS[state] || SPHERE_COLORS.idle;
+  const isActive  = state === STATE.LISTENING || state === STATE.SPEAKING;
+  const isThink   = state === STATE.THINKING;
 
   return (
-    <div className="relative flex items-center justify-center cursor-pointer"
+    <div className="relative flex items-center justify-center cursor-pointer select-none"
          onClick={onClick}>
 
-      {/* Outer glow rings — pulse when active */}
-      {[1, 2, 3].map(i => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full border"
+      {/* Glow rings */}
+      {[1, 2, 3, 4].map(i => (
+        <motion.div key={i}
+          className="absolute rounded-full"
           style={{
-            width:  `${160 + i * 48}px`,
-            height: `${160 + i * 48}px`,
-            borderColor: colors.glow,
+            width : `${200 + i * 60}px`,
+            height: `${200 + i * 60}px`,
+            border: `1px solid ${c.glow}`,
           }}
           animate={isActive ? {
-            scale  : [1, 1.08, 1],
-            opacity: [0.6 / i, 0.15 / i, 0.6 / i],
-          } : isThinking ? {
+            scale  : [1, 1.06 + i * 0.01, 1],
+            opacity: [0.5 / i, 0.1 / i, 0.5 / i],
+          } : isThink ? {
             rotate : [0, 360],
-            opacity: [0.3, 0.6, 0.3],
-          } : {
-            opacity: 0.15 / i,
-          }}
+            opacity: [0.25, 0.5, 0.25],
+          } : { opacity: 0.1 / i }}
           transition={isActive ? {
-            duration: 1.4 + i * 0.3,
-            repeat  : Infinity,
-            ease    : "easeInOut",
-            delay   : i * 0.2,
-          } : isThinking ? {
-            duration: 2 + i * 0.5,
-            repeat  : Infinity,
-            ease    : "linear",
-          } : { duration: 0.5 }}
+            duration: 1.6 + i * 0.35, repeat: Infinity, ease: "easeInOut", delay: i * 0.2,
+          } : isThink ? {
+            duration: 2.5 + i * 0.4, repeat: Infinity, ease: "linear",
+          } : { duration: 0.6 }}
         />
       ))}
 
       {/* Main sphere */}
       <motion.div
-        className="relative w-40 h-40 rounded-full flex items-center justify-center
-                   select-none z-10"
+        className="relative w-52 h-52 rounded-full flex items-center justify-center z-10"
         style={{
-          background: `radial-gradient(circle at 35% 35%, ${colors.from}, ${colors.to})`,
-          boxShadow : `0 0 60px ${colors.glow}, 0 0 120px ${colors.glow}40,
-                       inset 0 2px 8px rgba(255,255,255,0.15)`,
+          background: `radial-gradient(circle at 35% 30%, ${c.from}, ${c.to})`,
+          boxShadow : `0 0 80px ${c.glow}, 0 0 160px ${c.glow}50,
+                       inset 0 3px 12px rgba(255,255,255,0.18)`,
         }}
-        animate={isActive ? {
-          scale: [1, 1.04, 1],
-        } : isThinking ? {
-          scale: [1, 1.02, 0.98, 1],
-        } : {
-          scale: 1,
-        }}
-        transition={isActive ? {
-          duration: 0.8,
-          repeat  : Infinity,
-          ease    : "easeInOut",
-        } : isThinking ? {
-          duration: 1.2,
-          repeat  : Infinity,
-          ease    : "easeInOut",
-        } : { duration: 0.3 }}
-        whileHover={{ scale: state === STATE.IDLE || state === STATE.PAUSED ? 1.06 : 1 }}
-        whileTap={{ scale: 0.95 }}
+        animate={isActive  ? { scale: [1, 1.04, 1] }
+               : isThink   ? { scale: [1, 1.02, 0.98, 1] }
+               : { scale: 1 }}
+        transition={isActive ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+                  : isThink  ? { duration: 1.3, repeat: Infinity, ease: "easeInOut" }
+                  : { duration: 0.4 }}
+        whileHover={{ scale: [STATE.IDLE, STATE.PAUSED, STATE.EXPIRED].includes(state) ? 1.05 : 1 }}
+        whileTap={{ scale: 0.96 }}
       >
-        {/* Inner highlight */}
-        <div className="absolute top-4 left-6 w-8 h-5 rounded-full
-                        bg-white/20 blur-sm" />
+        {/* Highlight */}
+        <div className="absolute top-6 left-8 w-10 h-6 rounded-full bg-white/20 blur-md" />
 
-        {/* Icon */}
-        <motion.div
-          animate={isThinking ? { rotate: [0, 10, -10, 0] } : {}}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        >
-          {state === STATE.LISTENING && <Mic size={36} className="text-white drop-shadow-lg" />}
-          {state === STATE.THINKING  && (
-            <div className="flex gap-1.5">
-              {[0,1,2].map(i => (
-                <motion.div key={i}
-                  className="w-2.5 h-2.5 rounded-full bg-white"
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
-                />
-              ))}
-            </div>
-          )}
-          {state === STATE.SPEAKING  && <Volume2 size={36} className="text-white drop-shadow-lg" />}
-          {state === STATE.IDLE      && <Mic size={36} className="text-white/80 drop-shadow-lg" />}
-          {state === STATE.PAUSED    && <MicOff size={36} className="text-white/60" />}
-          {state === STATE.EXPIRED   && <RotateCcw size={32} className="text-white/80" />}
-        </motion.div>
+        {/* Listening — sound wave bars */}
+        {state === STATE.LISTENING && (
+          <div className="flex items-end gap-1.5 h-12">
+            {[4,7,11,9,6,10,8,5,9,7,4].map((h, i) => (
+              <motion.div key={i}
+                className="w-1.5 rounded-full bg-white/90"
+                animate={{ height: [`${h * 3}px`, `${h * 6}px`, `${h * 3}px`] }}
+                transition={{ duration: 0.35 + i * 0.04, repeat: Infinity, ease: "easeInOut", delay: i * 0.06 }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Thinking — bouncing dots */}
+        {state === STATE.THINKING && (
+          <div className="flex gap-2.5">
+            {[0, 1, 2].map(i => (
+              <motion.div key={i}
+                className="w-3.5 h-3.5 rounded-full bg-white/90"
+                animate={{ y: [0, -12, 0] }}
+                transition={{ duration: 0.65, repeat: Infinity, delay: i * 0.18 }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Speaking — radiate rings */}
+        {state === STATE.SPEAKING && (
+          <div className="relative flex items-center justify-center">
+            {[0, 1, 2].map(i => (
+              <motion.div key={i}
+                className="absolute rounded-full border-2 border-white/40"
+                animate={{ scale: [1, 2.2], opacity: [0.6, 0] }}
+                transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.4, ease: "easeOut" }}
+                style={{ width: "40px", height: "40px" }}
+              />
+            ))}
+            <Volume2 size={36} className="text-white/90 drop-shadow-lg relative z-10" />
+          </div>
+        )}
+
+        {/* Idle */}
+        {(state === STATE.IDLE || state === STATE.PAUSED || state === STATE.EXPIRED) && (
+          <motion.div
+            animate={{ scale: [1, 1.08, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            {state === STATE.EXPIRED
+              ? <RotateCcw size={40} className="text-white/80" />
+              : <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                        fill="rgba(255,255,255,0.85)" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"
+                        stroke="rgba(255,255,255,0.85)" strokeWidth="2"
+                        strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            }
+          </motion.div>
+        )}
       </motion.div>
-
-      {/* Sound wave bars — only when speaking */}
-      {state === STATE.SPEAKING && (
-        <div className="absolute bottom-0 flex items-end gap-1 h-8">
-          {[3,5,8,6,4,7,5,3,6,4].map((h, i) => (
-            <motion.div
-              key={i}
-              className="w-1 rounded-full bg-violet-400/70"
-              animate={{ height: [`${h * 3}px`, `${h * 6}px`, `${h * 3}px`] }}
-              transition={{ duration: 0.4 + i * 0.05, repeat: Infinity, ease: "easeInOut" }}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
 
-// ── Timer ring ────────────────────────────────────────────
-function TimerRing({ elapsed, limit }) {
+// ── Timer arc (minimal, top-right) ────────────────────────
+function TimerArc({ elapsed, limit }) {
   const pct     = Math.min(elapsed / limit, 1);
-  const r       = 54;
+  const r       = 18;
   const circ    = 2 * Math.PI * r;
-  const dash    = circ * (1 - pct);
+  const offset  = circ * (1 - pct);
   const mins    = Math.floor((limit - elapsed) / 60);
   const secs    = (limit - elapsed) % 60;
-  const warning = elapsed > limit * 0.8;
+  const warn    = elapsed > limit * 0.8;
 
   return (
-    <div className="relative flex items-center justify-center w-32 h-32">
-      <svg className="absolute inset-0 -rotate-90" width="128" height="128">
-        <circle cx="64" cy="64" r={r} fill="none"
-          stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
-        <motion.circle cx="64" cy="64" r={r} fill="none"
-          stroke={warning ? "#f87171" : "#10b981"}
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeDasharray={circ}
-          strokeDashoffset={dash}
-          animate={{ strokeDashoffset: dash }}
-          transition={{ duration: 0.5 }}
-        />
+    <div className="relative flex items-center justify-center w-12 h-12">
+      <svg className="absolute inset-0 -rotate-90" width="48" height="48">
+        <circle cx="24" cy="24" r={r} fill="none"
+          stroke="rgba(255,255,255,0.07)" strokeWidth="3" />
+        <motion.circle cx="24" cy="24" r={r} fill="none"
+          stroke={warn ? "#f87171" : "#10b981"}
+          strokeWidth="3" strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={offset}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 0.5 }} />
       </svg>
-      <div className="text-center z-10">
-        <div className={`text-xl font-bold tabular-nums ${warning ? "text-red-400" : "text-white"}`}>
-          {String(mins).padStart(2,"0")}:{String(secs).padStart(2,"0")}
-        </div>
-        <div className="text-[10px] text-surface-500 uppercase tracking-wider">left</div>
-      </div>
+      <span className={`text-[9px] font-bold tabular-nums z-10
+                        ${warn ? "text-red-400" : "text-white/70"}`}>
+        {String(mins).padStart(2,"0")}:{String(secs).padStart(2,"0")}
+      </span>
     </div>
   );
 }
 
-// ── Main VoiceMode component ──────────────────────────────
+// ── Main component ────────────────────────────────────────
 export default function VoiceMode({ userId, onClose, onMessageSent }) {
   const [voiceState,    setVoiceState]    = useState(STATE.IDLE);
   const [elapsed,       setElapsed]       = useState(0);
-  const [statusText,    setStatusText]    = useState("Tap the sphere to start");
   const [muted,         setMuted]         = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
-  const [lastExchange,  setLastExchange]  = useState(null); // {user, ai} — latest only
 
   const recognitionRef = useRef(null);
   const audioRef       = useRef(null);
@@ -213,13 +204,13 @@ export default function VoiceMode({ userId, onClose, onMessageSent }) {
   const stateRef       = useRef(voiceState);
   stateRef.current     = voiceState;
 
-  // ── Session timer ──────────────────────────────────────
+  // Session timer
   useEffect(() => {
     if (!sessionActive) return;
     timerRef.current = setInterval(() => {
       setElapsed(e => {
         if (e + 1 >= SESSION_LIMIT) {
-          endSession("Time limit reached (10 min). Start a new session.");
+          endSession();
           return SESSION_LIMIT;
         }
         return e + 1;
@@ -228,60 +219,47 @@ export default function VoiceMode({ userId, onClose, onMessageSent }) {
     return () => clearInterval(timerRef.current);
   }, [sessionActive]);
 
-  // ── Cleanup on unmount ─────────────────────────────────
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopListening();
       clearInterval(timerRef.current);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     };
   }, []);
 
-  // ── Speech recognition setup ───────────────────────────
+  // ── STT ───────────────────────────────────────────────
   const startListening = useCallback(() => {
     if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
       toast.error("Speech recognition not supported. Use Chrome.");
       return;
     }
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
-    rec.lang = "en-US";
-    rec.continuous = false;
-    rec.interimResults = false;
+    rec.lang            = "en-US";
+    rec.continuous      = false;
+    rec.interimResults  = false;
     rec.maxAlternatives = 1;
 
-    rec.onstart  = () => {
-      setVoiceState(STATE.LISTENING);
-      setStatusText("Listening… speak now");
-    };
+    rec.onstart  = () => setVoiceState(STATE.LISTENING);
 
     rec.onresult = async (e) => {
       const text = e.results[0][0].transcript.trim();
       if (!text) { startListening(); return; }
-      setLastExchange({ user: text, ai: null });
       await handleUserSpeech(text);
     };
 
     rec.onerror = (e) => {
       if (e.error === "no-speech") {
-        // Restart silently
-        if (stateRef.current !== STATE.EXPIRED && stateRef.current !== STATE.PAUSED) {
+        if (stateRef.current !== STATE.EXPIRED && stateRef.current !== STATE.PAUSED)
           startListening();
-        }
       } else {
-        setStatusText(`Error: ${e.error}`);
         setVoiceState(STATE.PAUSED);
       }
     };
 
     rec.onend = () => {
-      // If we're still in listening state (no result), restart
-      if (stateRef.current === STATE.LISTENING) {
-        startListening();
-      }
+      if (stateRef.current === STATE.LISTENING) startListening();
     };
 
     recognitionRef.current = rec;
@@ -295,51 +273,34 @@ export default function VoiceMode({ userId, onClose, onMessageSent }) {
     }
   }, []);
 
-  // ── Handle user speech → AI → TTS ─────────────────────
+  // ── AI + TTS ──────────────────────────────────────────
   const handleUserSpeech = useCallback(async (text) => {
     stopListening();
     setVoiceState(STATE.THINKING);
-    setStatusText("Thinking…");
 
     try {
-      // Send to full chat pipeline (memory, tasks, insights all work)
-      const res  = await sendMessage(userId, text);
-      const data = res.data;
+      const res    = await sendMessage(userId, text);
+      const data   = res.data;
       const aiText = data.response;
 
-      setLastExchange(prev => ({ user: prev?.user || "", ai: aiText }));
-
-      // Notify parent to refresh sidebar
       if (onMessageSent) onMessageSent(data);
 
-      // Toast for task creation / memory storage
-      if (data.tasks_created?.length > 0) {
-        toast.success(`${data.tasks_created.length} task(s) created!`, { icon: "✅" });
-      }
-      if (data.stored_fact) {
-        toast.success(`Remembered: ${data.stored_fact.key}`, { icon: "🧠" });
-      }
-
       if (muted) {
-        // Skip TTS, go straight back to listening
         setVoiceState(STATE.LISTENING);
-        setStatusText("Listening…");
         startListening();
         return;
       }
 
-      // TTS: get audio from backend
       setVoiceState(STATE.SPEAKING);
-      setStatusText("Speaking…");
 
       const ttsRes = await axios.post(
-        `${BASE}/voice/speak`,
+        `${BASE}/api/v1/voice/speak`,
         { text: aiText },
         { responseType: "arraybuffer", timeout: 30000 }
       );
 
-      const blob = new Blob([ttsRes.data], { type: "audio/wav" });
-      const url  = URL.createObjectURL(blob);
+      const blob  = new Blob([ttsRes.data], { type: "audio/wav" });
+      const url   = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audioRef.current = audio;
 
@@ -348,14 +309,12 @@ export default function VoiceMode({ userId, onClose, onMessageSent }) {
         audioRef.current = null;
         if (stateRef.current !== STATE.EXPIRED && stateRef.current !== STATE.PAUSED) {
           setVoiceState(STATE.LISTENING);
-          setStatusText("Listening…");
           startListening();
         }
       };
 
       audio.onerror = () => {
         URL.revokeObjectURL(url);
-        // TTS failed — continue without audio
         if (stateRef.current !== STATE.EXPIRED) {
           setVoiceState(STATE.LISTENING);
           startListening();
@@ -363,52 +322,49 @@ export default function VoiceMode({ userId, onClose, onMessageSent }) {
       };
 
       audio.play().catch(() => {
-        // Autoplay blocked — continue without audio
         setVoiceState(STATE.LISTENING);
         startListening();
       });
 
     } catch (err) {
-      const msg = err.response?.data?.detail || "Connection error";
-      toast.error(msg);
+      toast.error(err.response?.data?.detail || "Connection error");
       setVoiceState(STATE.PAUSED);
-      setStatusText("Error — tap to resume");
     }
   }, [userId, muted, startListening, stopListening, onMessageSent]);
 
-  // ── Session control ────────────────────────────────────
+  // ── Session control ───────────────────────────────────
   const startSession = useCallback(() => {
     setSessionActive(true);
     setElapsed(0);
-    setLastExchange(null);
     startListening();
   }, [startListening]);
 
-  const endSession = useCallback((msg = "Session ended") => {
+  const endSession = useCallback(() => {
     stopListening();
     clearInterval(timerRef.current);
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     setVoiceState(STATE.EXPIRED);
     setSessionActive(false);
-    setStatusText(msg);
   }, [stopListening]);
 
   const pauseResume = useCallback(() => {
     if (voiceState === STATE.PAUSED) {
       setVoiceState(STATE.LISTENING);
-      setStatusText("Listening…");
       startListening();
     } else if (voiceState === STATE.LISTENING) {
       stopListening();
-      if (audioRef.current) { audioRef.current.pause(); }
+      if (audioRef.current) audioRef.current.pause();
       setVoiceState(STATE.PAUSED);
-      setStatusText("Paused — tap to resume");
     }
   }, [voiceState, startListening, stopListening]);
 
   const handleSphereClick = useCallback(() => {
     if (voiceState === STATE.IDLE)    { startSession(); return; }
-    if (voiceState === STATE.EXPIRED) { setVoiceState(STATE.IDLE); setElapsed(0); setLastExchange(null); setStatusText("Tap the sphere to start"); return; }
+    if (voiceState === STATE.EXPIRED) {
+      setVoiceState(STATE.IDLE);
+      setElapsed(0);
+      return;
+    }
     pauseResume();
   }, [voiceState, startSession, pauseResume]);
 
@@ -417,167 +373,86 @@ export default function VoiceMode({ userId, onClose, onMessageSent }) {
     if (audioRef.current) audioRef.current.muted = !muted;
   };
 
-  const colors = SPHERE_COLORS[voiceState] || SPHERE_COLORS.idle;
+  const c = SPHERE_COLORS[voiceState] || SPHERE_COLORS.idle;
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-between
-                 bg-surface-950/97 backdrop-blur-2xl overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col bg-[#080c10] overflow-hidden"
     >
-      {/* Background ambient glow */}
+      {/* Full-screen ambient glow that reacts to state */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
-        animate={{ opacity: [0.4, 0.7, 0.4] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        animate={{ opacity: [0.5, 0.8, 0.5] }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
         style={{
-          background: `radial-gradient(ellipse 60% 50% at 50% 60%, ${colors.glow}, transparent)`,
+          background: `radial-gradient(ellipse 70% 60% at 50% 55%, ${c.glow}, transparent)`,
         }}
       />
 
-      {/* ── Top bar ──────────────────────────────────────── */}
-      <div className="w-full flex items-center justify-between px-6 pt-6 z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-soul-400 animate-pulse" />
-          <span className="text-sm font-semibold text-white tracking-wide">
-            Voice Mode
+      {/* ── Top bar — minimal ─────────────────────────── */}
+      <div className="flex items-center justify-between px-6 pt-5 shrink-0 z-10">
+        <div className="flex items-center gap-2.5">
+          <motion.div
+            className="w-2 h-2 rounded-full bg-soul-400"
+            animate={{ opacity: sessionActive ? [1, 0.3, 1] : 1 }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+          <span className="text-sm font-semibold text-white/80 tracking-wide">
+            SoulSync
           </span>
-          {sessionActive && (
-            <span className="text-xs text-surface-500 bg-surface-800/60
-                             px-2 py-0.5 rounded-full border border-surface-700/50">
-              Session active
-            </span>
-          )}
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Mute toggle */}
-          <button
-            onClick={toggleMute}
+          {sessionActive && <TimerArc elapsed={elapsed} limit={SESSION_LIMIT} />}
+
+          <button onClick={toggleMute}
             className={`p-2 rounded-xl border transition-all duration-200
                         ${muted
                           ? "bg-red-500/15 border-red-500/30 text-red-400"
-                          : "bg-surface-800/60 border-surface-700/50 text-surface-400 hover:text-white"}`}
-            title={muted ? "Unmute AI voice" : "Mute AI voice"}
-          >
-            {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                          : "bg-white/5 border-white/10 text-white/40 hover:text-white/70"}`}>
+            {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
           </button>
 
-          {/* Close */}
-          <button
-            onClick={() => { endSession(); onClose(); }}
-            className="p-2 rounded-xl bg-surface-800/60 border border-surface-700/50
-                       text-surface-400 hover:text-white hover:bg-surface-700
-                       transition-all duration-200"
-          >
-            <X size={16} />
+          <button onClick={() => { endSession(); onClose(); }}
+            className="p-2 rounded-xl bg-white/5 border border-white/10
+                       text-white/40 hover:text-white/70 transition-all duration-200">
+            <X size={15} />
           </button>
         </div>
       </div>
 
-      {/* ── Last exchange — subtle text only, no bubbles ── */}
-      <div className="flex-1 w-full max-w-sm px-6 flex flex-col
-                      items-center justify-end pb-4 z-10 gap-3">
-        <AnimatePresence mode="wait">
-          {lastExchange?.user && (
-            <motion.p
-              key={lastExchange.user}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 0.5, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="text-xs text-surface-500 text-center italic truncate w-full"
-            >
-              You: "{lastExchange.user.slice(0, 80)}{lastExchange.user.length > 80 ? "…" : ""}"
-            </motion.p>
-          )}
-          {lastExchange?.ai && (
-            <motion.p
-              key={lastExchange.ai}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 0.7, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="text-xs text-surface-300 text-center leading-relaxed line-clamp-2 w-full"
-            >
-              {lastExchange.ai.slice(0, 120)}{lastExchange.ai.length > 120 ? "…" : ""}
-            </motion.p>
-          )}
-          {!lastExchange && voiceState === STATE.IDLE && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-xs text-surface-600 text-center"
-            >
-              Your conversation will appear here
-            </motion.p>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* ── Sphere + timer ────────────────────────────────── */}
-      <div className="flex flex-col items-center gap-8 pb-10 z-10">
-        {/* Timer ring — only when session active */}
-        {sessionActive && (
-          <TimerRing elapsed={elapsed} limit={SESSION_LIMIT} />
-        )}
-
-        {/* Sphere */}
+      {/* ── Centre — sphere only ──────────────────────── */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-10 z-10">
         <Sphere state={voiceState} onClick={handleSphereClick} />
 
         {/* Status label */}
-        <motion.p
-          key={statusText}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-sm text-surface-400 font-medium tracking-wide"
-        >
-          {statusText}
-        </motion.p>
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={voiceState}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.3 }}
+            className="text-sm font-medium tracking-widest uppercase text-white/40"
+          >
+            {STATUS_TEXT[voiceState]}
+          </motion.p>
+        </AnimatePresence>
+      </div>
 
-        {/* Controls row */}
-        <div className="flex items-center gap-4">
-          {sessionActive && voiceState !== STATE.EXPIRED && (
-            <button
-              onClick={pauseResume}
-              className="px-5 py-2 rounded-xl bg-surface-800/70 border border-surface-700/50
-                         text-surface-300 hover:text-white hover:bg-surface-700
-                         text-sm font-medium transition-all duration-200"
-            >
-              {voiceState === STATE.PAUSED ? "Resume" : "Pause"}
-            </button>
-          )}
-
-          {voiceState === STATE.EXPIRED && (
-            <button
-              onClick={() => { setVoiceState(STATE.IDLE); setElapsed(0); setTranscript([]); setStatusText("Tap the sphere to start"); }}
-              className="px-6 py-2.5 rounded-xl bg-soul-600 hover:bg-soul-500
-                         text-white text-sm font-semibold transition-all duration-200
-                         flex items-center gap-2"
-            >
-              <RotateCcw size={14} /> New Session
-            </button>
-          )}
-
-          {sessionActive && (
-            <button
-              onClick={() => endSession("Session ended manually")}
-              className="px-5 py-2 rounded-xl bg-red-500/10 border border-red-500/20
-                         text-red-400 hover:bg-red-500/20 text-sm font-medium
-                         transition-all duration-200"
-            >
-              End Session
-            </button>
-          )}
-        </div>
-
-        {/* Hint */}
-        {voiceState === STATE.IDLE && (
-          <p className="text-xs text-surface-600 text-center max-w-xs">
-            Tap the sphere to start · All commands, memory, tasks and insights work in voice mode
-          </p>
+      {/* ── Bottom — only End Session when active ─────── */}
+      <div className="flex justify-center pb-10 shrink-0 z-10">
+        {sessionActive && voiceState !== STATE.EXPIRED && (
+          <button onClick={endSession}
+            className="px-6 py-2 rounded-full bg-white/5 border border-white/10
+                       text-white/40 hover:text-white/70 hover:bg-white/10
+                       text-xs font-medium tracking-wider uppercase
+                       transition-all duration-200">
+            End Session
+          </button>
         )}
       </div>
     </motion.div>

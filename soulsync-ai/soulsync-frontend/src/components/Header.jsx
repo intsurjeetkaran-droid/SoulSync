@@ -94,11 +94,12 @@ export default function Header({ userId, isConnected, onLogout, onVoiceMode, onM
         {/* Voice Mode button */}
         <button
           onClick={onVoiceMode}
-          title="Voice Mode — Coming Soon"
+          title="Voice Mode"
           className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl
-                     bg-surface-800/60 border border-surface-700/50
-                     text-surface-500 cursor-not-allowed
-                     text-xs font-medium select-none opacity-60">
+                     bg-soul-600/20 border border-soul-500/40
+                     text-soul-300 hover:bg-soul-600/30 hover:border-soul-400/60
+                     hover:text-soul-200 transition-all duration-200
+                     text-xs font-medium select-none">
           <Mic size={13} />
           <span className="hidden lg:inline">Voice</span>
         </button>
