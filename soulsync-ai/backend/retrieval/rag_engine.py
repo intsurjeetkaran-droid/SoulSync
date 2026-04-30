@@ -93,7 +93,6 @@ def _handle_task_manage(user_id: str, op: str, keyword: str,
     from backend.tasks.task_manager import (
         get_tasks, complete_task, delete_task
     )
-    from backend.memory.database import get_connection, get_cursor
 
     tasks = get_tasks(user_id, status="pending")
     if not tasks:
@@ -176,17 +175,18 @@ def _handle_task_manage(user_id: str, op: str, keyword: str,
     elif op in ("priority_high", "priority_low", "priority_medium"):
         priority_map = {"priority_high": "high", "priority_low": "low", "priority_medium": "medium"}
         new_priority = priority_map[op]
-        conn = get_connection()
-        cur  = get_cursor(conn)
-        try:
-            cur.execute(
-                "UPDATE tasks SET priority = %s WHERE id = %s AND user_id = %s",
-                (new_priority, task_id, user_id)
+        import asyncio
+        from backend.db.mongo.connection import get_mongo_db
+        async def _update_priority():
+            db = get_mongo_db()
+            await db.tasks.update_one(
+                {"$or": [{"task_id": str(task_id)}, {"task_id": task_id}], "user_id": user_id},
+                {"$set": {"priority": new_priority}}
             )
-            conn.commit()
-        finally:
-            cur.close()
-            conn.close()
+        try:
+            asyncio.get_event_loop().run_until_complete(_update_priority())
+        except Exception:
+            pass
         emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}[new_priority]
         response = (
             f"Ho gaya! **{task_title}** ab {emoji} **{new_priority}** priority pe hai."

@@ -1,31 +1,20 @@
 """
-SoulSync AI - Auth Dependencies
+SoulSync AI - Auth Dependencies (MongoDB-backed)
 FastAPI dependency for JWT-protected routes.
 """
 
 import logging
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
 from backend.auth.security import decode_access_token
-from backend.auth.models   import get_user_by_id
 
-logger  = logging.getLogger("soulsync.auth.deps")
+logger = logging.getLogger("soulsync.auth.deps")
 bearer  = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer)
 ) -> dict:
-    """
-    FastAPI dependency — extracts and validates JWT from Authorization header.
-    Raises 401 if token is missing or invalid.
-
-    Usage:
-        @router.get("/me")
-        async def me(user = Depends(get_current_user)):
-            return user
-    """
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -43,28 +32,28 @@ async def get_current_user(
 
     user_id = payload.get("sub")
     if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload.",
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid token payload.")
 
-    user = get_user_by_id(user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User no longer exists.",
-        )
+    # Fetch from MongoDB
+    from backend.db.mongo.connection import get_mongo_db
+    db = get_mongo_db()
+    doc = await db.users.find_one({"user_id": user_id})
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="User no longer exists.")
 
-    return user
+    return {
+        "user_id"   : doc["user_id"],
+        "name"      : doc.get("name", ""),
+        "email"     : doc.get("email", ""),
+        "created_at": str(doc.get("created_at", "")),
+    }
 
 
 async def get_current_user_optional(
     credentials: HTTPAuthorizationCredentials = Depends(bearer)
 ) -> dict | None:
-    """
-    Same as get_current_user but returns None instead of raising 401.
-    Use for endpoints that work both authenticated and unauthenticated.
-    """
     if not credentials:
         return None
     try:

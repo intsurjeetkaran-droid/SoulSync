@@ -1,186 +1,164 @@
 """
-SoulSync AI - Task Manager
-Handles all task CRUD operations with PostgreSQL.
-
-Operations:
-  create_task    : add a new task
-  get_tasks      : fetch tasks for a user
-  complete_task  : mark task as done
-  delete_task    : remove a task
-  auto_create    : detect + create tasks from chat message
+SoulSync AI - Task Manager (MongoDB)
+All task CRUD backed by MongoDB.
 """
 
-from backend.memory.database      import get_connection, get_cursor
-from backend.memory.memory_manager import ensure_user_exists
-from backend.tasks.task_detector   import detect_tasks
+import asyncio
+import logging
+import uuid
+from datetime import datetime
+from typing import Optional
+
+from backend.tasks.task_detector import detect_tasks
+
+logger = logging.getLogger("soulsync.task_manager")
 
 
-# ─── Create Task ──────────────────────────────────────────
-
-def create_task(user_id: str, title: str,
-                due_date: str = None, priority: str = "medium",
-                source: str = "manual") -> dict:
-    """
-    Create a new task for a user.
-
-    Returns the created task as a dict.
-    """
-    ensure_user_exists(user_id)
-
-    conn = get_connection()
-    cur  = get_cursor(conn)
+def _run(coro):
     try:
-        cur.execute(
-            """
-            INSERT INTO tasks (user_id, title, due_date, priority, status, source)
-            VALUES (%s, %s, %s, %s, 'pending', %s)
-            RETURNING id, user_id, title, due_date, priority, status, source, created_at;
-            """,
-            (user_id, title, due_date, priority, source)
-        )
-        row = cur.fetchone()
-        conn.commit()
-        return dict(row)
-    finally:
-        cur.close()
-        conn.close()
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                return pool.submit(asyncio.run, coro).result()
+        return loop.run_until_complete(coro)
+    except RuntimeError:
+        return asyncio.run(coro)
 
 
-# ─── Get Tasks ────────────────────────────────────────────
+def _db():
+    from backend.db.mongo.connection import get_mongo_db
+    return get_mongo_db()
+
+
+def _serialize(doc: dict) -> dict:
+    if not doc:
+        return {}
+    return {
+        "id"        : doc.get("task_id", str(doc.get("_id", ""))),
+        "task_id"   : doc.get("task_id", ""),
+        "user_id"   : doc.get("user_id"),
+        "title"     : doc.get("title"),
+        "due_date"  : doc.get("due_date"),
+        "priority"  : doc.get("priority", "medium"),
+        "status"    : doc.get("status", "pending"),
+        "source"    : doc.get("source", "manual"),
+        "created_at": str(doc.get("created_at", "")),
+    }
+
+
+# ── Create ────────────────────────────────────────────────
+
+def create_task(user_id: str, title: str, due_date: str = None,
+                priority: str = "medium", source: str = "manual") -> dict:
+    async def _run_inner():
+        db = _db()
+        task_id = str(uuid.uuid4())
+        doc = {
+            "task_id"   : task_id,
+            "user_id"   : user_id,
+            "title"     : title,
+            "due_date"  : due_date,
+            "priority"  : priority,
+            "status"    : "pending",
+            "source"    : source,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        }
+        await db.tasks.insert_one(doc)
+        return _serialize(doc)
+    try:
+        return _run(_run_inner())
+    except Exception as e:
+        logger.error(f"[TaskMgr] create_task failed: {e}")
+        raise
+
+
+# ── Get ───────────────────────────────────────────────────
 
 def get_tasks(user_id: str, status: str = None) -> list:
-    """
-    Fetch tasks for a user.
-
-    Args:
-        user_id : unique user identifier
-        status  : filter by 'pending' or 'completed' (None = all)
-
-    Returns list of task dicts.
-    """
-    conn = get_connection()
-    cur  = get_cursor(conn)
-    try:
+    async def _run_inner():
+        db = _db()
+        query = {"user_id": user_id}
         if status:
-            cur.execute(
-                """
-                SELECT id, user_id, title, due_date, priority,
-                       status, source, created_at
-                FROM tasks
-                WHERE user_id = %s AND status = %s
-                ORDER BY
-                    CASE priority
-                        WHEN 'high'   THEN 1
-                        WHEN 'medium' THEN 2
-                        WHEN 'low'    THEN 3
-                    END,
-                    created_at DESC;
-                """,
-                (user_id, status)
-            )
-        else:
-            cur.execute(
-                """
-                SELECT id, user_id, title, due_date, priority,
-                       status, source, created_at
-                FROM tasks
-                WHERE user_id = %s
-                ORDER BY
-                    CASE priority
-                        WHEN 'high'   THEN 1
-                        WHEN 'medium' THEN 2
-                        WHEN 'low'    THEN 3
-                    END,
-                    created_at DESC;
-                """,
-                (user_id,)
-            )
-        rows = cur.fetchall()
-        return [dict(r) for r in rows]
-    finally:
-        cur.close()
-        conn.close()
-
-
-# ─── Complete Task ────────────────────────────────────────
-
-def complete_task(task_id: int, user_id: str) -> dict:
-    """Mark a task as completed."""
-    conn = get_connection()
-    cur  = get_cursor(conn)
+            query["status"] = status
+        cursor = db.tasks.find(query).sort("created_at", -1)
+        docs = [_serialize(doc) async for doc in cursor]
+        priority_order = {"high": 1, "medium": 2, "low": 3}
+        docs.sort(key=lambda d: priority_order.get(d.get("priority", "medium"), 2))
+        return docs
     try:
-        cur.execute(
-            """
-            UPDATE tasks
-            SET status = 'completed'
-            WHERE id = %s AND user_id = %s
-            RETURNING id, title, status;
-            """,
-            (task_id, user_id)
+        return _run(_run_inner())
+    except Exception as e:
+        logger.error(f"[TaskMgr] get_tasks failed: {e}")
+        return []
+
+
+# ── Complete ──────────────────────────────────────────────
+
+def complete_task(task_id, user_id: str) -> dict:
+    """task_id can be int (legacy) or str (MongoDB task_id)."""
+    async def _run_inner():
+        db = _db()
+        task_id_str = str(task_id)
+        result = await db.tasks.find_one_and_update(
+            {"$or": [{"task_id": task_id_str}, {"task_id": task_id}], "user_id": user_id},
+            {"$set": {"status": "completed", "completed_at": datetime.utcnow(),
+                      "updated_at": datetime.utcnow()}},
+            return_document=True,
         )
-        row = cur.fetchone()
-        conn.commit()
-        return dict(row) if row else {}
-    finally:
-        cur.close()
-        conn.close()
-
-
-# ─── Delete Task ──────────────────────────────────────────
-
-def delete_task(task_id: int, user_id: str) -> bool:
-    """Delete a task. Returns True if deleted."""
-    conn = get_connection()
-    cur  = get_cursor(conn)
+        return _serialize(result) if result else {}
     try:
-        cur.execute(
-            "DELETE FROM tasks WHERE id = %s AND user_id = %s;",
-            (task_id, user_id)
+        return _run(_run_inner())
+    except Exception as e:
+        logger.error(f"[TaskMgr] complete_task failed: {e}")
+        return {}
+
+
+# ── Delete ────────────────────────────────────────────────
+
+def delete_task(task_id, user_id: str) -> bool:
+    async def _run_inner():
+        db = _db()
+        task_id_str = str(task_id)
+        result = await db.tasks.delete_one(
+            {"$or": [{"task_id": task_id_str}, {"task_id": task_id}], "user_id": user_id}
         )
-        deleted = cur.rowcount > 0
-        conn.commit()
-        return deleted
-    finally:
-        cur.close()
-        conn.close()
+        return result.deleted_count > 0
+    try:
+        return _run(_run_inner())
+    except Exception as e:
+        logger.error(f"[TaskMgr] delete_task failed: {e}")
+        return False
 
 
-# ─── Auto-Create from Chat ────────────────────────────────
+# ── Auto-create from chat ─────────────────────────────────
 
 def auto_create_tasks(user_id: str, message: str) -> list:
-    """
-    Detect and create tasks from a chat message automatically.
-
-    Returns list of created task dicts.
-    """
     detected = detect_tasks(message)
-    created  = []
-
+    created = []
     for task_data in detected:
         task = create_task(
             user_id  = user_id,
             title    = task_data["title"],
             due_date = task_data.get("due_date"),
             priority = task_data.get("priority", "medium"),
-            source   = "auto"
+            source   = "auto",
         )
         created.append(task)
-
     return created
 
 
-# ─── Task Summary ─────────────────────────────────────────
+# ── Summary ───────────────────────────────────────────────
 
 def get_task_summary(user_id: str) -> dict:
-    """Return task counts by status."""
     all_tasks = get_tasks(user_id)
     pending   = [t for t in all_tasks if t["status"] == "pending"]
     completed = [t for t in all_tasks if t["status"] == "completed"]
     high_pri  = [t for t in pending   if t["priority"] == "high"]
-
     return {
-        "total"    : len(all_tasks),
-        "pending"  : len(pending),
-        "completed": len(completed),
+        "total"                : len(all_tasks),
+        "pending"              : len(pending),
+        "completed"            : len(completed),
         "high_priority_pending": len(high_pri),
     }

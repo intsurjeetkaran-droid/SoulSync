@@ -1,6 +1,7 @@
 """
 SoulSync AI - Main FastAPI Application
-Entry point for the backend server
+Active databases: MongoDB (primary) + Redis (cache) + FAISS (vectors)
+Disabled: MySQL (reserved for future payments)
 """
 
 import logging
@@ -8,51 +9,70 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api.chat         import router as chat_router
-from backend.api.memory       import router as memory_router
-from backend.api.processing   import router as processing_router
-from backend.api.suggestion   import router as suggestion_router
-from backend.api.tasks        import router as tasks_router
-from backend.api.voice        import router as voice_router
-from backend.api.optimization import router as optimization_router
+from backend.api.chat            import router as chat_router
+from backend.api.memory          import router as memory_router
+from backend.api.processing      import router as processing_router
+from backend.api.suggestion      import router as suggestion_router
+from backend.api.tasks           import router as tasks_router
+from backend.api.voice           import router as voice_router
+from backend.api.optimization    import router as optimization_router
 from backend.api.unique_features import router as unique_router
-from backend.auth.routes      import router as auth_router
+from backend.api.payment         import router as payment_router
+from backend.auth.routes         import router as auth_router
 
 logger = logging.getLogger("soulsync.main")
 
 
-# ─── Startup / Shutdown ───────────────────────────────────
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Run DB migrations on startup."""
+    """Startup: init MongoDB indexes. Shutdown: close connections."""
+    # ── MongoDB ───────────────────────────────────────────
     try:
-        from backend.memory.schema import create_tables
-        from backend.auth.models   import migrate_auth_schema
-        create_tables()
-        migrate_auth_schema()
-        logger.info("[Main] DB ready")
+        from backend.db.mongo.connection import init_mongo_indexes, get_mongo_client
+        await init_mongo_indexes()
+        logger.info("[Main] MongoDB indexes ready ✅")
     except Exception as e:
-        logger.error(f"[Main] DB startup error: {e}")
+        logger.error(f"[Main] MongoDB init error: {e}")
+
+    # ── Redis (optional — fail gracefully) ────────────────
+    try:
+        from backend.db.redis.cache import RedisCacheManager
+        cache = RedisCacheManager()
+        ok = await cache.ping()
+        logger.info(f"[Main] Redis {'connected ✅' if ok else 'unavailable (cache disabled)'}")
+    except Exception as e:
+        logger.warning(f"[Main] Redis not available: {e}")
+
     yield
 
+    # ── Shutdown ──────────────────────────────────────────
+    try:
+        from backend.db.mongo.connection import close_mongo_connection
+        await close_mongo_connection()
+    except Exception:
+        pass
+    try:
+        from backend.db.redis.cache import close_redis_connection
+        await close_redis_connection()
+    except Exception:
+        pass
+    logger.info("[Main] Shutdown complete")
 
-# ─── App Setup ────────────────────────────────────────────
+
 app = FastAPI(
     title       = "SoulSync AI",
-    description = "A personal AI companion with memory and personalization",
-    version     = "2.0.0",
+    description = "Personal AI companion — MongoDB + Redis + FAISS",
+    version     = "3.0.0",
     lifespan    = lifespan,
 )
 
-# ─── CORS ─────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins     = [
         "http://localhost:5173",
         "http://localhost:3000",
         "https://soulsync-vl8w.onrender.com",
-        "*",   # remove in production and list exact origins
+        "*",
     ],
     allow_credentials = True,
     allow_methods     = ["*"],
@@ -69,14 +89,16 @@ app.include_router(tasks_router,        prefix="/api/v1", tags=["Tasks"])
 app.include_router(voice_router,        prefix="/api/v1", tags=["Voice"])
 app.include_router(optimization_router, prefix="/api/v1", tags=["Optimization"])
 app.include_router(unique_router,       prefix="/api/v1", tags=["Unique Features"])
+app.include_router(payment_router,      prefix="/api/v1", tags=["Payments (disabled)"])
 
 
-# ─── Root ─────────────────────────────────────────────────
 @app.get("/")
 async def root():
     return {
-        "project": "SoulSync AI",
-        "version": "2.0.0",
-        "status" : "running",
-        "docs"   : "/docs",
+        "project"  : "SoulSync AI",
+        "version"  : "3.0.0",
+        "status"   : "running",
+        "databases": {"primary": "MongoDB", "cache": "Redis", "vectors": "FAISS"},
+        "payments" : "disabled (coming soon)",
+        "docs"     : "/docs",
     }

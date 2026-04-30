@@ -1,92 +1,92 @@
 """
-SoulSync AI - Activity Store
-Saves and retrieves structured activity data from PostgreSQL.
+SoulSync AI - Activity Store (MongoDB)
 """
 
-from backend.memory.database import get_connection, get_cursor
+import asyncio
+import logging
+import uuid
+from datetime import datetime
+
+logger = logging.getLogger("soulsync.activity_store")
 
 
-def save_activity(user_id: str, raw_text: str, extracted: dict) -> int:
-    """
-    Save extracted structured data to activities table.
-
-    Returns the new activity ID.
-    """
-    conn = get_connection()
-    cur  = get_cursor(conn)
+def _run(coro):
     try:
-        cur.execute(
-            """
-            INSERT INTO activities
-                (user_id, raw_text, emotion, activity, status, productivity, summary)
-            VALUES
-                (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id;
-            """,
-            (
-                user_id,
-                raw_text,
-                extracted.get("emotion"),
-                extracted.get("activity"),
-                extracted.get("status"),
-                extracted.get("productivity"),
-                extracted.get("summary"),
-            )
-        )
-        row = cur.fetchone()
-        conn.commit()
-        return row["id"]
-    finally:
-        cur.close()
-        conn.close()
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                return pool.submit(asyncio.run, coro).result()
+        return loop.run_until_complete(coro)
+    except RuntimeError:
+        return asyncio.run(coro)
+
+
+def _db():
+    from backend.db.mongo.connection import get_mongo_db
+    return get_mongo_db()
+
+
+def save_activity(user_id: str, raw_text: str, extracted: dict) -> str:
+    async def _run_inner():
+        db = _db()
+        activity_id = str(uuid.uuid4())
+        await db.activities.insert_one({
+            "activity_id": activity_id,
+            "user_id"    : user_id,
+            "raw_text"   : raw_text,
+            "emotion"    : extracted.get("emotion", "neutral") or "neutral",
+            "activity"   : extracted.get("activity", "") or "",
+            "status"     : extracted.get("status", "") or "",
+            "productivity": extracted.get("productivity", "") or "",
+            "summary"    : extracted.get("summary", "") or "",
+            "created_at" : datetime.utcnow(),
+        })
+        return activity_id
+    try:
+        return _run(_run_inner())
+    except Exception as e:
+        logger.warning(f"[ActivityStore] save failed: {e}")
+        return ""
 
 
 def get_activities(user_id: str, limit: int = 20) -> list:
-    """
-    Fetch recent structured activities for a user.
-    Returns list of activity dicts.
-    """
-    conn = get_connection()
-    cur  = get_cursor(conn)
+    async def _run_inner():
+        db = _db()
+        cursor = db.activities.find({"user_id": user_id}).sort("created_at", -1).limit(limit)
+        docs = []
+        async for doc in cursor:
+            docs.append({
+                "activity_id": doc.get("activity_id"),
+                "user_id"    : doc.get("user_id"),
+                "raw_text"   : doc.get("raw_text", ""),
+                "emotion"    : doc.get("emotion", "neutral"),
+                "activity"   : doc.get("activity", ""),
+                "status"     : doc.get("status", ""),
+                "productivity": doc.get("productivity", ""),
+                "summary"    : doc.get("summary", ""),
+                "created_at" : str(doc.get("created_at", "")),
+            })
+        return docs
     try:
-        cur.execute(
-            """
-            SELECT id, user_id, raw_text, emotion, activity,
-                   status, productivity, summary, created_at
-            FROM activities
-            WHERE user_id = %s
-            ORDER BY created_at DESC
-            LIMIT %s;
-            """,
-            (user_id, limit)
-        )
-        rows = cur.fetchall()
-        return [dict(r) for r in rows]
-    finally:
-        cur.close()
-        conn.close()
+        return _run(_run_inner())
+    except Exception:
+        return []
 
 
 def get_emotion_summary(user_id: str) -> dict:
-    """
-    Count emotions for a user — used by Suggestion Engine later.
-    Returns: {"happy": 3, "tired": 5, ...}
-    """
-    conn = get_connection()
-    cur  = get_cursor(conn)
+    async def _run_inner():
+        db = _db()
+        pipeline = [
+            {"$match": {"user_id": user_id, "emotion": {"$ne": ""}}},
+            {"$group": {"_id": "$emotion", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+        ]
+        result = {}
+        async for doc in db.activities.aggregate(pipeline):
+            result[doc["_id"]] = doc["count"]
+        return result
     try:
-        cur.execute(
-            """
-            SELECT emotion, COUNT(*) as count
-            FROM activities
-            WHERE user_id = %s AND emotion IS NOT NULL
-            GROUP BY emotion
-            ORDER BY count DESC;
-            """,
-            (user_id,)
-        )
-        rows = cur.fetchall()
-        return {r["emotion"]: r["count"] for r in rows}
-    finally:
-        cur.close()
-        conn.close()
+        return _run(_run_inner())
+    except Exception:
+        return {}

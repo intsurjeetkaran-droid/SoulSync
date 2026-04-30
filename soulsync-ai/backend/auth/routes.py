@@ -1,8 +1,8 @@
 """
-SoulSync AI - Auth API Routes
-POST /auth/signup  → create account
-POST /auth/login   → get JWT token
-GET  /auth/me      → get current user (protected)
+SoulSync AI - Auth API Routes (MongoDB-backed)
+POST /auth/signup  → create account in MongoDB
+POST /auth/login   → verify against MongoDB, return JWT
+GET  /auth/me      → return current user from MongoDB
 """
 
 import logging
@@ -10,14 +10,16 @@ import asyncio
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, EmailStr, field_validator
 
-from backend.auth.models       import get_user_by_email, get_user_by_id
-from backend.auth.security     import (
-    hash_password_async, verify_password_async, create_access_token
-)
+from backend.auth.security     import hash_password_async, verify_password_async, create_access_token
 from backend.auth.dependencies import get_current_user
 
 logger = logging.getLogger("soulsync.auth.routes")
 router = APIRouter()
+
+
+def _get_db():
+    from backend.db.mongo.connection import get_mongo_db
+    return get_mongo_db()
 
 
 # ─── Schemas ──────────────────────────────────────────────
@@ -57,60 +59,46 @@ class AuthResponse(BaseModel):
 
 @router.post("/auth/signup", response_model=AuthResponse, status_code=201)
 async def signup(request: SignupRequest):
-    """
-    Create a new user account.
-    Returns JWT token immediately (auto-login after signup).
-    bcrypt runs in thread pool — does not block the event loop.
-    """
-    # Check duplicate email (fast DB query)
-    if get_user_by_email(request.email):
+    db = _get_db()
+
+    # Check duplicate email
+    existing = await db.users.find_one({"email": request.email.lower().strip()})
+    if existing:
         raise HTTPException(status_code=400, detail="Email already registered.")
 
-    # Hash password in thread pool (bcrypt is CPU-intensive)
     hashed = await hash_password_async(request.password)
 
-    # Create user in DB
+    import re, time
+    from datetime import datetime
+    safe_prefix = re.sub(r'[^a-z0-9]', '_', request.email.split('@')[0].lower())
+    user_id = f"{safe_prefix}_{int(time.time())}"
+
+    doc = {
+        "user_id"      : user_id,
+        "name"         : request.name,
+        "email"        : request.email.lower().strip(),
+        "password_hash": hashed,
+        "profile"      : {},
+        "preferences"  : {},
+        "created_at"   : datetime.utcnow(),
+        "updated_at"   : datetime.utcnow(),
+    }
+
     try:
-        import re, time
-        from backend.memory.database import get_connection, get_cursor
-        from backend.memory.memory_manager import ensure_user_exists
-
-        safe_prefix = re.sub(r'[^a-z0-9]', '_', request.email.split('@')[0].lower())
-        user_id     = f"{safe_prefix}_{int(time.time())}"
-
-        conn = get_connection()
-        cur  = get_cursor(conn)
-        try:
-            cur.execute(
-                """
-                INSERT INTO users (user_id, name, email, password)
-                VALUES (%s, %s, %s, %s)
-                RETURNING id, user_id, name, email, created_at;
-                """,
-                (user_id, request.name, request.email.lower().strip(), hashed)
-            )
-            row = cur.fetchone()
-            conn.commit()
-            user = dict(row)
-        finally:
-            cur.close()
-            conn.close()
-
+        await db.users.insert_one(doc)
         logger.info(f"[Auth] Signup: {request.email} → {user_id}")
-
     except Exception as e:
         logger.error(f"[Auth] Signup error: {e}")
         raise HTTPException(status_code=500, detail="Signup failed. Please try again.")
 
-    token = create_access_token({"sub": user["user_id"], "name": user["name"]})
-
+    token = create_access_token({"sub": user_id, "name": request.name})
     return AuthResponse(
-        access_token = token,
-        user = {
-            "user_id"   : user["user_id"],
-            "name"      : user["name"],
-            "email"     : user["email"],
-            "created_at": str(user["created_at"]),
+        access_token=token,
+        user={
+            "user_id"   : user_id,
+            "name"      : request.name,
+            "email"     : request.email.lower().strip(),
+            "created_at": str(doc["created_at"]),
         }
     )
 
@@ -119,48 +107,33 @@ async def signup(request: SignupRequest):
 
 @router.post("/auth/login", response_model=AuthResponse)
 async def login(request: LoginRequest):
-    """
-    Authenticate with email + password.
-    bcrypt verify runs in thread pool — does not block the event loop.
-    """
-    # Fast DB lookup first
-    user = get_user_by_email(request.email)
-    if not user:
-        # Use constant-time response to prevent email enumeration
+    db = _get_db()
+
+    doc = await db.users.find_one({"email": request.email.lower().strip()})
+    if not doc:
         await asyncio.sleep(0.1)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password.",
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid email or password.")
 
-    stored_hash = user.get("password")
+    stored_hash = doc.get("password_hash", "")
     if not stored_hash:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Account has no password set. Please sign up again.",
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Account has no password set.")
 
-    # bcrypt verify in thread pool — this is the slow step
     valid = await verify_password_async(request.password, stored_hash)
     if not valid:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password.",
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid email or password.")
 
-    # Strip password from response
-    user.pop("password", None)
     logger.info(f"[Auth] Login success: {request.email}")
-
-    token = create_access_token({"sub": user["user_id"], "name": user["name"]})
-
+    token = create_access_token({"sub": doc["user_id"], "name": doc.get("name", "")})
     return AuthResponse(
-        access_token = token,
-        user = {
-            "user_id"   : user["user_id"],
-            "name"      : user["name"],
-            "email"     : user["email"],
-            "created_at": str(user["created_at"]),
+        access_token=token,
+        user={
+            "user_id"   : doc["user_id"],
+            "name"      : doc.get("name", ""),
+            "email"     : doc["email"],
+            "created_at": str(doc.get("created_at", "")),
         }
     )
 
@@ -169,13 +142,9 @@ async def login(request: LoginRequest):
 
 @router.get("/auth/me")
 async def me(current_user: dict = Depends(get_current_user)):
-    """
-    Return the currently authenticated user's profile.
-    Requires: Authorization: Bearer <token>
-    """
     return {
         "user_id"   : current_user["user_id"],
         "name"      : current_user["name"],
         "email"     : current_user["email"],
-        "created_at": str(current_user["created_at"]),
+        "created_at": str(current_user.get("created_at", "")),
     }
