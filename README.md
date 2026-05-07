@@ -47,7 +47,7 @@ Unlike traditional chatbots that forget everything after each session, SoulSync 
 ## ✨ Key Features
 
 ### 🧠 1. Intelligent Memory Engine
-- Stores every conversation permanently in PostgreSQL
+- Stores every conversation permanently in MongoDB
 - **Short-term memory** — recent conversation context (last 5 turns)
 - **Long-term memory** — all past conversations, searchable by meaning
 - **Behavioral memory** — structured patterns extracted from your messages
@@ -148,8 +148,8 @@ Unlike traditional chatbots that forget everything after each session, SoulSync 
           ┌────────────────────▼────────────────────┐
           │         MEMORY PROCESSING                │
           │  Extract: emotion, activity, status,     │
-          │  productivity → Save to PostgreSQL        │
-          │  Personal facts → personal_info table    │
+          │  productivity → Save to MongoDB           │
+          │  Personal facts → memories collection    │
           └────────────────────┬────────────────────┘
                                │
           ┌────────────────────▼────────────────────┐
@@ -180,7 +180,7 @@ Unlike traditional chatbots that forget everything after each session, SoulSync 
                                │
           ┌────────────────────▼────────────────────┐
           │         SAVE TO MEMORY (DB)              │
-          │  Store conversation turn in PostgreSQL   │
+          │  Store conversation turn in MongoDB      │
           │  + add to FAISS vector index             │
           └────────────────────┬────────────────────┘
                                │
@@ -202,14 +202,17 @@ Unlike traditional chatbots that forget everything after each session, SoulSync 
 | FastAPI | 0.136.0 | REST API framework |
 | Groq API | llama-3.3-70b-versatile | AI response generation (cloud, sub-second) |
 | sentence-transformers | 3.4.1 | Text embeddings for RAG (all-MiniLM-L6-v2) |
-| FAISS | 1.10.0 | Vector similarity search |
-| PostgreSQL | 16+ | Persistent memory storage |
-| psycopg2 | 2.9.x | PostgreSQL Python driver |
+| FAISS | 1.13.0 | Vector similarity search |
+| MongoDB | 6+ | Persistent memory storage (Atlas cloud) |
+| motor | 3.6.0 | MongoDB async Python driver |
+| pymongo | 4.9.x | MongoDB sync Python driver |
 | Pandas | 3.0.2 | Pattern analysis |
 | NumPy | 2.4.3 | Numerical processing |
 | python-jose | 3.5.0 | JWT token generation & verification |
 | passlib + bcrypt | 1.7.4 / 4.0.1 | Password hashing |
-| openai-whisper | 20250625 | Speech recognition (available for future voice features) |
+| redis | 5.2.1 | Response caching (optional) |
+| edge-tts | latest | Microsoft Neerja neural TTS (Indian female voice) |
+| openai-whisper | 20231117 | Speech recognition |
 | python-dotenv | 1.0.1 | Environment config |
 
 ### Frontend
@@ -260,8 +263,8 @@ SoulSync/                           ← Repository root
 │   │   │   └── model.py            ← Re-exports generate_response (backward compat)
 │   │   │
 │   │   ├── memory/
-│   │   │   ├── database.py         ← PostgreSQL connection
-│   │   │   ├── schema.py           ← All table creation (users, memories, tasks…)
+│   │   │   ├── database.py         ← MongoDB connection & indexes
+│   │   │   ├── schema.py           ← MongoDB collection schemas
 │   │   │   ├── memory_manager.py   ← Save/fetch memories, chat history, earliest recall
 │   │   │   └── personal_info.py    ← Structured key/value facts store
 │   │   │
@@ -288,9 +291,9 @@ SoulSync/                           ← Repository root
 │   │   │
 │   │   ├── utils/
 │   │   │   ├── cache.py            ← LRU response cache (200 entries, 10min TTL)
-│   │   │   ├── db_pool.py          ← PostgreSQL connection pool
-│   │   │   ├── voice_stt.py        ← Whisper STT (available for future use)
-│   │   │   └── voice_tts.py        ← pyttsx3 TTS (available for future use)
+│   │   │   ├── db_pool.py          ← MongoDB connection pool
+│   │   │   ├── voice_stt.py        ← Whisper STT
+│   │   │   └── voice_tts.py        ← edge-tts (Neerja) + pyttsx3 fallback
 │   │   │
 │   │   └── api/
 │   │       ├── chat.py             ← POST /chat (intent-aware RAG + memory + tasks)
@@ -364,7 +367,7 @@ SoulSync/                           ← Repository root
 |---|---|---|
 | Python | 3.11+ | `python --version` |
 | Node.js | 20+ | `node -v` |
-| PostgreSQL | 16+ | `psql --version` |
+| MongoDB Atlas | Cloud account | [Create free cluster](https://www.mongodb.com/cloud/atlas) |
 
 ---
 
@@ -405,29 +408,31 @@ pip install -r soulsync-ai/requirements.txt
 
 ### Step 4 — Configure Environment
 
-Edit `soulsync-ai/.env` with your values:
+Edit `soulsync-ai/.env` with your MongoDB Atlas connection string:
 
 ```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=soulsync_db
-DB_USER=postgres
-DB_PASSWORD=your_db_password_here
-
+# Groq API Key
 GROQ_API_KEY=your_groq_api_key_here
 
+# JWT Auth
 JWT_SECRET_KEY=soulsync-super-secret-jwt-key-change-in-production-2026
 JWT_ALGORITHM=HS256
 JWT_EXPIRE_MINUTES=10080
+
+# MongoDB Atlas (Primary Database)
+MONGODB_URL=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/soulsync_db?retryWrites=true&w=majority
+MONGODB_DB=soulsync_db
+
+# Redis (Optional - for caching)
+REDIS_URL=redis://localhost:6379
+REDIS_TTL_CHAT=600
+REDIS_TTL_SESSION=86400
+REDIS_TTL_DEFAULT=300
 ```
 
-> Get a free Groq API key at [console.groq.com](https://console.groq.com)
-
-Create the database (one time only):
-
-```bash
-psql -U postgres -c "CREATE DATABASE soulsync_db;"
-```
+> **Get MongoDB Atlas:** Create a free cluster at [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
+> 
+> **Get Groq API Key:** Get a free key at [console.groq.com](https://console.groq.com)
 
 ---
 
@@ -511,21 +516,37 @@ Then open **http://localhost:5173**
 ### `.env` File (soulsync-ai/.env)
 
 ```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=soulsync_db
-DB_USER=postgres
-DB_PASSWORD=1234
+# Groq API
+GROQ_API_KEY=your_groq_api_key_here
+
+# JWT Auth
+JWT_SECRET_KEY=soulsync-super-secret-jwt-key-change-in-production-2026
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=10080
+
+# MongoDB Atlas (Primary Database)
+MONGODB_URL=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/soulsync_db?retryWrites=true&w=majority
+MONGODB_DB=soulsync_db
+
+# Redis (Optional - for caching)
+REDIS_URL=redis://localhost:6379
+REDIS_TTL_CHAT=600
+REDIS_TTL_SESSION=86400
+REDIS_TTL_DEFAULT=300
 ```
 
-### Database Tables (auto-created on first run)
+### MongoDB Collections (auto-created on first run)
 
-| Table | Purpose |
+| Collection | Purpose |
 |---|---|
-| `users` | Registered users |
-| `memories` | All conversation messages |
-| `activities` | Structured extracted data (emotion, activity, status) |
+| `users` | Registered users with auth data |
+| `conversations` | Conversation sessions (one per month per user) |
+| `messages` | All chat messages (user + assistant) |
+| `memories` | Personal facts (key/value pairs) |
 | `tasks` | User tasks with priority and status |
+| `activities` | Structured extracted data (emotion, activity, status) |
+| `mood_logs` | Mood tracking entries |
+| `memory_collections` | Typed life events (32 collection types) |
 
 ---
 
@@ -835,18 +856,18 @@ docker build -f docker/Dockerfile.frontend -t soulsync-frontend:latest .
 |---|---|---|---|
 | 1 | Core AI (Groq) | 🟢 Complete | Groq API, llama-3.3-70b-versatile |
 | 2 | Language Detection | 🟢 Complete | Pattern-based, English/Hindi/Hinglish |
-| 3 | Memory System | 🟢 Complete | PostgreSQL, psycopg2, permanent storage |
-| 4 | Personal Info Store | 🟢 Complete | Structured key/value DB table, upsert |
-| 5 | Intent Detection | 🟢 Complete | Regex classifier — 4 intents + chronological |
+| 3 | Memory System | 🟢 Complete | MongoDB, motor, permanent storage |
+| 4 | Personal Info Store | 🟢 Complete | MongoDB memories collection, upsert |
+| 5 | Intent Detection | 🟢 Complete | Regex classifier — 5 intents |
 | 6 | Memory Processing | 🟢 Complete | Rule-based NLP, activity extraction |
 | 7 | Retrieval (RAG) | 🟢 Complete | FAISS top-5, keyword fallback, earliest recall |
 | 8 | Suggestion Engine | 🟢 Complete | Pandas, NumPy, rule-based logic |
-| 9 | Task Module | 🟢 Complete | Strict NLP detection, PostgreSQL CRUD |
+| 9 | Task Module | 🟢 Complete | Strict NLP detection, MongoDB CRUD |
 | 10 | Authentication | 🟢 Complete | JWT, bcrypt, signup/login/me |
 | 11 | Frontend App | 🟢 Complete | React, Vite, Tailwind, Framer Motion |
 | 12 | Landing Page | 🟢 Complete | Hero, Features, Use-Case Carousel, CTA |
-| 13 | Deployment | 🟢 Complete | Docker, Kubernetes, Nginx, venv enforcement |
-| 14 | Voice Mode | ⚪ Disabled | Whisper + pyttsx3 available for future use |
+| 13 | Voice Mode | 🟢 Complete | edge-tts (Neerja), Web Speech API |
+| 14 | Deployment | 🟢 Complete | Docker, Kubernetes, Nginx, venv enforcement |
 
 ---
 
@@ -855,7 +876,7 @@ docker build -f docker/Dockerfile.frontend -t soulsync-frontend:latest .
 - Passwords are **bcrypt-hashed** — never stored in plain text
 - **JWT authentication** — every API request requires a valid token
 - Each user's memory is **fully isolated** — no cross-user data leakage
-- PostgreSQL database is password-protected
+- **MongoDB Atlas** — cloud database with encryption at rest
 - User can delete any memory or task at any time
 - API endpoints validate all inputs with Pydantic
 - CORS configured (tighten `allow_origins` in production)
