@@ -1,7 +1,28 @@
 """
-SoulSync AI - Main FastAPI Application
-Active databases: MongoDB (primary) + Redis (cache) + FAISS (vectors)
-Disabled: MySQL (reserved for future payments)
+SoulSync AI - Main FastAPI Application Entry Point
+
+This module initializes and configures the FastAPI application, setting up:
+- Database connections (MongoDB, Redis)
+- CORS middleware for frontend communication
+- API routers for all service endpoints
+- Application lifespan management (startup/shutdown)
+
+Database Architecture:
+    - MongoDB: Primary database for users, conversations, tasks, memories
+    - Redis: Caching layer for improved response times
+    - FAISS: Vector store for semantic memory retrieval (RAG)
+    - MySQL: Reserved for future payment features (currently disabled)
+
+Usage:
+    # Development
+    python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+    
+    # Production
+    uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 4
+
+API Documentation:
+    - Swagger UI: http://localhost:8000/docs
+    - ReDoc: http://localhost:8000/redoc
 """
 
 import logging
@@ -9,6 +30,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# Import API routers
 from backend.api.chat            import router as chat_router
 from backend.api.memory          import router as memory_router
 from backend.api.processing      import router as processing_router
@@ -20,7 +42,14 @@ from backend.api.unique_features import router as unique_router
 from backend.api.payment         import router as payment_router
 from backend.auth.routes         import router as auth_router
 
-logger = logging.getLogger("soulsync.main")
+# Import logging configuration
+from backend.utils.logging_config import setup_logging, get_logger
+
+# Initialize logging system
+setup_logging()
+
+# Get module-specific logger
+logger = get_logger("main")
 
 
 @asynccontextmanager

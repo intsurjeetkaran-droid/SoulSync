@@ -1,5 +1,3 @@
-<div align="center">
-
 # 🧠 SoulSync AI
 
 ### *"An AI that understands you, grows with you, and supports your life."*
@@ -8,29 +6,30 @@
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.136-009688)
 ![React](https://img.shields.io/badge/React-18-61DAFB)
+![MongoDB](https://img.shields.io/badge/MongoDB-6.0-47A248)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 **Built by [Surjeet Karan](https://github.com/surjeetkaran) · April 23, 2026**
-
-</div>
 
 ---
 
 ## 📌 Table of Contents
 
 1. [What is SoulSync AI?](#-what-is-soulsync-ai)
-2. [Key Features](#-key-features)
-3. [How It Works](#-how-it-works--workflow)
+2. [Quick Start](#-quick-start)
+3. [Key Features](#-key-features)
 4. [Tech Stack](#-tech-stack)
-5. [Project Structure](#-project-structure)
-6. [Local Run Guide](#-local-run-guide)
-7. [Environment Setup](#-environment-setup)
-8. [API Reference](#-api-reference)
-9. [Database Schema](#-database-schema)
-10. [Test Scripts](#-test-scripts)
-11. [Performance](#-performance--optimization)
+5. [Architecture Overview](#-architecture-overview)
+6. [Project Structure](#-project-structure)
+7. [Complete Setup Guide](#-complete-setup-guide)
+8. [Environment Configuration](#-environment-configuration)
+9. [API Reference](#-api-reference)
+10. [Database Schema](#-database-schema)
+11. [Development Guidelines](#-development-guidelines)
 12. [Deployment](#-deployment)
-13. [Developers](#-developers)
+13. [Troubleshooting](#-troubleshooting)
+14. [Contributing](#-contributing)
+15. [Developers](#-developers)
 
 ---
 
@@ -41,6 +40,64 @@ SoulSync AI is a **personal AI companion system** that learns from your daily li
 Unlike traditional chatbots that forget everything after each session, SoulSync AI builds a **long-term memory model** of you — growing smarter and more personal with every interaction.
 
 > **Core Concept:** `User shares life → AI learns → AI adapts → AI improves support`
+
+### Key Capabilities
+
+- **🧠 Intelligent Memory** — Remembers every conversation permanently
+- **🔍 Smart Retrieval** — Uses RAG (Retrieval-Augmented Generation) for context
+- **🎯 Task Management** — Auto-detects and manages tasks from conversations
+- **📊 Insights** — Analyzes patterns in your emotions and activities
+- **🌐 Multi-Language** — Supports English, Hindi, and Hinglish
+- **🔐 Secure Auth** — JWT-based authentication with bcrypt password hashing
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+| Software | Version | Purpose |
+|----------|---------|---------|
+| Python | 3.11+ | Backend runtime |
+| Node.js | 20+ | Frontend runtime |
+| MongoDB | 6.0+ | Database (local or Atlas) |
+| Git | Latest | Version control |
+
+### 5-Minute Setup
+
+```bash
+# 1. Clone repository
+git clone https://github.com/intsurjeetkaran-droid/SoulSync.git
+cd SoulSync
+
+# 2. Create Python virtual environment
+python -m venv venv
+# Windows: venv\Scripts\activate
+# macOS/Linux: source venv/bin/activate
+
+# 3. Install dependencies
+pip install -r soulsync-ai/requirements.txt
+cd soulsync-ai/soulsync-frontend && npm install && cd ../..
+
+# 4. Configure environment
+cp soulsync-ai/.env.example soulsync-ai/.env
+# Edit .env with your MongoDB and Groq API keys
+
+# 5. Start backend (Terminal 1)
+cd soulsync-ai
+python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+
+# 6. Start frontend (Terminal 2)
+cd soulsync-ai/soulsync-frontend
+npm run dev
+
+# 7. Open browser
+# Frontend: http://localhost:5173
+# Backend API: http://localhost:8000
+# API Docs: http://localhost:8000/docs
+```
+
+> **Need detailed instructions?** See [Complete Setup Guide](#-complete-setup-guide) below.
 
 ---
 
@@ -74,7 +131,6 @@ Unlike traditional chatbots that forget everything after each session, SoulSync 
 - Generates actionable, personalized suggestions:
   - *"You've skipped gym 3 times this week — try a 15-min walk instead"*
   - *"Stress detected multiple times — try 5-min breathing exercises"*
-  - *"You're on a productivity streak — document what's working!"*
 
 ### ✅ 5. Intelligent Task Manager
 - **Auto-detects tasks** from natural language in your messages
@@ -87,8 +143,6 @@ Unlike traditional chatbots that forget everything after each session, SoulSync 
 - **Automatic language detection** — detects English, Hindi (Devanagari), and Hinglish
 - **Pattern-based detection** — instant recognition without API calls
 - **Natural responses** — AI responds in the same language you use
-- **Hinglish support** — understands Hindi words written in Roman script
-- **Language-aware prompts** — system instructions adapt to detected language
 - Examples:
   - English: "I'm feeling stressed today"
   - Hindi: "मुझे आज तनाव हो रहा है"
@@ -103,93 +157,21 @@ Unlike traditional chatbots that forget everything after each session, SoulSync 
 ### ⚡ 8. Performance & Caching
 - **Groq API** — sub-second AI responses (avg 0.3–0.7s)
 - LRU response cache (200 entries, 10-min TTL)
-- Database connection pooling (2–10 connections)
+- MongoDB connection pooling (2–10 connections)
 - FAISS vector search with relevance threshold filtering
 
-### 🌐 9. Modern Web Interface
+### 🎨 9. Modern Web Interface
 - Built with **React + Vite + Tailwind CSS + Framer Motion**
-- Emerald/amber/charcoal premium color palette
-- Animated landing page with use-case carousel
+- Premium color palette with smooth animations
+- Responsive design for desktop and mobile
 - Real-time chat with typing indicator
 - Task panel with priority sorting
-- Insights panel with emotion charts
-- Multi-language support (English, Hindi, Hinglish)
-- Clean chat window on every login (session-isolated state)
 
 ### 🐳 10. Production-Ready Deployment
-- Full **Docker Compose** setup (3 services)
+- Full **Docker Compose** setup
 - **Kubernetes** manifests for scaling
 - Nginx reverse proxy for frontend
 - Health checks on all services
-
----
-
-## 🔄 How It Works — Workflow
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│              USER SENDS A MESSAGE (text input)                  │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-          ┌────────────────────▼────────────────────┐
-          │         LANGUAGE DETECTION               │
-          │  Detect: English, Hindi, or Hinglish    │
-          │  Pattern-based (instant, no API call)   │
-          └────────────────────┬────────────────────┘
-                               │
-          ┌────────────────────▼────────────────────┐
-          │           INTENT DETECTION               │
-          │  Classify: personal_info_store           │
-          │            personal_info_query           │
-          │            task_command                  │
-          │            normal_chat                   │
-          └────────────────────┬────────────────────┘
-                               │
-          ┌────────────────────▼────────────────────┐
-          │         MEMORY PROCESSING                │
-          │  Extract: emotion, activity, status,     │
-          │  productivity → Save to MongoDB           │
-          │  Personal facts → memories collection    │
-          └────────────────────┬────────────────────┘
-                               │
-          ┌────────────────────▼────────────────────┐
-          │         VECTOR STORE (FAISS)             │
-          │  Embed message → Store in user's         │
-          │  personal FAISS index on disk            │
-          └────────────────────┬────────────────────┘
-                               │
-          ┌────────────────────▼────────────────────┐
-          │           RAG RETRIEVAL                  │
-          │  Personal facts (DB) + FAISS top-5       │
-          │  + keyword fallback if FAISS misses      │
-          │  + chronological recall for "first X"    │
-          └────────────────────┬────────────────────┘
-                               │
-          ┌────────────────────▼────────────────────┐
-          │         AI RESPONSE (Groq API)           │
-          │  llama-3.3-70b-versatile + memory ctx   │
-          │  + language instruction + chat history   │
-          │  → personalized response in user's lang  │
-          └────────────────────┬────────────────────┘
-                               │
-          ┌────────────────────▼────────────────────┐
-          │           TASK AUTO-DETECTION            │
-          │  Intent = task_command only              │
-          │  → Auto-create tasks with priority       │
-          └────────────────────┬────────────────────┘
-                               │
-          ┌────────────────────▼────────────────────┐
-          │         SAVE TO MEMORY (DB)              │
-          │  Store conversation turn in MongoDB      │
-          │  + add to FAISS vector index             │
-          └────────────────────┬────────────────────┘
-                               │
-          ┌────────────────────▼────────────────────┐
-          │         FRONTEND DISPLAY                 │
-          │  Response + memories recalled + tasks    │
-          │  created + intent shown in React UI      │
-          └─────────────────────────────────────────┘
-```
 
 ---
 
@@ -200,30 +182,25 @@ Unlike traditional chatbots that forget everything after each session, SoulSync 
 |---|---|---|
 | Python | 3.11+ | Core language |
 | FastAPI | 0.136.0 | REST API framework |
-| Groq API | llama-3.3-70b-versatile | AI response generation (cloud, sub-second) |
-| sentence-transformers | 3.4.1 | Text embeddings for RAG (all-MiniLM-L6-v2) |
+| Groq API | llama-3.3-70b-versatile | AI response generation |
+| sentence-transformers | 3.4.1 | Text embeddings (all-MiniLM-L6-v2) |
 | FAISS | 1.13.0 | Vector similarity search |
-| MongoDB | 6+ | Persistent memory storage (Atlas cloud) |
+| MongoDB | 6.0+ | Primary database |
 | motor | 3.6.0 | MongoDB async Python driver |
-| pymongo | 4.9.x | MongoDB sync Python driver |
 | Pandas | 3.0.2 | Pattern analysis |
-| NumPy | 2.4.3 | Numerical processing |
-| python-jose | 3.5.0 | JWT token generation & verification |
+| python-jose | 3.5.0 | JWT tokens |
 | passlib + bcrypt | 1.7.4 / 4.0.1 | Password hashing |
 | redis | 5.2.1 | Response caching (optional) |
-| edge-tts | latest | Microsoft Neerja neural TTS (Indian female voice) |
-| openai-whisper | 20231117 | Speech recognition |
-| python-dotenv | 1.0.1 | Environment config |
 
 ### Frontend
 | Technology | Version | Purpose |
 |---|---|---|
 | React | 18 | UI framework |
 | Vite | 5.x | Build tool |
-| Tailwind CSS | 3.4.x | Styling (emerald/amber/charcoal palette) |
-| Framer Motion | latest | Animations — landing page, carousel, voice sphere |
-| React Router DOM | latest | Client-side routing (landing / login / signup / app) |
-| Axios | latest | API calls with JWT auto-injection |
+| Tailwind CSS | 3.4.x | Styling |
+| Framer Motion | latest | Animations |
+| React Router DOM | latest | Client-side routing |
+| Axios | latest | API calls with JWT |
 | Lucide React | latest | Icons |
 | react-hot-toast | latest | Notifications |
 
@@ -231,349 +208,362 @@ Unlike traditional chatbots that forget everything after each session, SoulSync 
 | Technology | Purpose |
 |---|---|
 | Docker | Containerization |
-| Docker Compose | Local multi-service orchestration |
-| Kubernetes | Production deployment + scaling |
+| Docker Compose | Local orchestration |
+| Kubernetes | Production deployment |
 | Nginx | Frontend serving + API proxy |
+
+---
+
+## 🏗️ Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      CLIENT LAYER                            │
+│              React + Vite + Tailwind CSS                     │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ HTTP/HTTPS
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    API GATEWAY LAYER                         │
+│              Nginx Reverse Proxy (optional)                  │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  APPLICATION LAYER                           │
+│              FastAPI Backend Services                        │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌───────────┐ │
+│  │    Auth    │ │    Chat    │ │    Tasks   │ │   Voice   │ │
+│  │  Service   │ │  Service   │ │  Service   │ │  Service  │ │
+│  └────────────┘ └────────────┘ └────────────┘ └───────────┘ │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌───────────┐ │
+│  │ Processing │ │  Retrieval │ │ Suggestion │ │  Memory   │ │
+│  │  Service   │ │  (RAG)     │ │  Service   │ │  Service  │ │
+│  └────────────┘ └────────────┘ └────────────┘ └───────────┘ │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       DATA LAYER                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   MongoDB    │  │    Redis     │  │    FAISS     │      │
+│  │  (Primary)   │  │  (Cache)     │  │  (Vectors)   │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    EXTERNAL SERVICES                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   Groq API   │  │  Edge TTS    │  │  Whisper     │      │
+│  │  (AI Chat)   │  │   (TTS)      │  │   (STT)      │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+
+1. **User sends message** → Frontend → Backend API
+2. **Language Detection** → Identify English/Hindi/Hinglish
+3. **Intent Detection** → Classify: store/query/task/chat
+4. **Memory Processing** → Extract emotion, activity, status
+5. **RAG Retrieval** → FAISS vector search + keyword fallback
+6. **AI Generation** → Groq API with memory context
+7. **Task Detection** → Auto-create tasks if applicable
+8. **Save to Memory** → Store conversation in MongoDB
+9. **Return Response** → Frontend displays with insights
 
 ---
 
 ## 📁 Project Structure
 
 ```
-SoulSync/                           ← Repository root
-│
-├── README.md                       ← This file
-├── credentials.txt                 ← Demo user credentials (generated by seed script)
-├── details.txt                     ← Complete non-technical project explanation
+SoulSync/
+├── README.md                       ← This file (single source of truth)
+├── details.txt                     ← Non-technical project explanation
+├── credentials.txt                 ← Demo user credentials (generated)
 ├── .gitignore
 │
-├── soulsync-ai/                    ← Main application folder
-│   │
-│   ├── backend/                    ← Python FastAPI backend
-│   │   ├── main.py                 ← App entry point, router registration, DB init
-│   │   │
-│   │   ├── auth/
-│   │   │   ├── models.py           ← User CRUD, bcrypt hashing
-│   │   │   ├── routes.py           ← POST /auth/signup, /auth/login, GET /auth/me
-│   │   │   ├── security.py         ← JWT create/decode, bcrypt hash/verify
-│   │   │   └── dependencies.py     ← FastAPI JWT dependency (get_current_user)
-│   │   │
-│   │   ├── core/
-│   │   │   ├── ai_service.py       ← Groq API client, generate_response(), language-aware
-│   │   │   └── model.py            ← Re-exports generate_response (backward compat)
-│   │   │
-│   │   ├── memory/
-│   │   │   ├── database.py         ← MongoDB connection & indexes
-│   │   │   ├── schema.py           ← MongoDB collection schemas
-│   │   │   ├── memory_manager.py   ← Save/fetch memories, chat history, earliest recall
-│   │   │   └── personal_info.py    ← Structured key/value facts store
-│   │   │
-│   │   ├── retrieval/
-│   │   │   ├── embedder.py         ← Text → 384-dim vectors (all-MiniLM-L6-v2)
-│   │   │   ├── vector_store.py     ← FAISS index per user (disk-persisted)
-│   │   │   └── rag_engine.py       ← Intent-aware RAG pipeline
-│   │   │
-│   │   ├── processing/
-│   │   │   ├── extractor.py        ← Rule-based extraction (emotion, activity, status)
-│   │   │   ├── activity_store.py   ← Save/fetch structured activity data
-│   │   │   ├── intent_detector.py  ← 4-intent classifier (store/query/task/chat)
-│   │   │   ├── language_detector.py← Multi-language detection (English/Hindi/Hinglish)
-│   │   │   ├── mood_predictor.py   ← Mood logging + pattern prediction
-│   │   │   └── scorer.py           ← Memory importance scoring (0-15 scale)
-│   │   │
-│   │   ├── suggestion/
-│   │   │   ├── analyzer.py         ← Pandas pattern analysis
-│   │   │   └── suggestion_engine.py← Rule-based suggestion generation
-│   │   │
-│   │   ├── tasks/
-│   │   │   ├── task_detector.py    ← Strict NLP task detection
-│   │   │   └── task_manager.py     ← Task CRUD + auto-create from chat
-│   │   │
-│   │   ├── utils/
-│   │   │   ├── cache.py            ← LRU response cache (200 entries, 10min TTL)
-│   │   │   ├── db_pool.py          ← MongoDB connection pool
-│   │   │   ├── voice_stt.py        ← Whisper STT
-│   │   │   └── voice_tts.py        ← edge-tts (Neerja) + pyttsx3 fallback
-│   │   │
-│   │   └── api/
-│   │       ├── chat.py             ← POST /chat (intent-aware RAG + memory + tasks)
-│   │       ├── memory.py           ← POST /save-memory, GET /get-memory
-│   │       ├── processing.py       ← POST /process-memory, GET /get-activities
-│   │       ├── suggestion.py       ← GET /suggestions, GET /analysis
-│   │       ├── tasks.py            ← Full task CRUD + auto-detect
-│   │       ├── voice.py            ← Voice endpoints (future use)
-│   │       ├── optimization.py     ← Cache stats, model info
-│   │       └── unique_features.py  ← Memory scoring, mood logging
-│   │
-│   ├── soulsync-frontend/          ← React + Tailwind CSS frontend
-│   │   ├── src/
-│   │   │   ├── App.jsx             ← Main app layout + session reset
-│   │   │   ├── main.jsx            ← Router, AuthProvider
-│   │   │   ├── context/
-│   │   │   │   └── AuthContext.jsx ← JWT auth state, login/signup/logout
-│   │   │   ├── api/
-│   │   │   │   └── soulsync.js     ← Axios client with JWT auto-injection
-│   │   │   ├── pages/
-│   │   │   │   ├── Landing.jsx     ← Landing page (hero, features, carousel, CTA)
-│   │   │   │   ├── Login.jsx       ← Login form
-│   │   │   │   └── Signup.jsx      ← Signup form with password strength meter
-│   │   │   └── components/
-│   │   │       ├── Header.jsx      ← Logo + user info + logout
-│   │   │       ├── ChatWindow.jsx  ← Message bubbles + typing indicator
-│   │   │       ├── ChatInput.jsx   ← Text input + send button
-│   │   │       ├── TaskPanel.jsx   ← Task list + create/complete/delete
-│   │   │       ├── InsightPanel.jsx← Emotion bars + suggestions
-│   │   │       └── UseCaseCarousel.jsx ← Landing page carousel
-│   │   ├── package.json
-│   │   └── vite.config.js
-│   │
-│   ├── scripts/
-│   │   ├── seed_users.py           ← Seed 5 demo users with full data
-│   │   └── verify_seed.py          ← Verify seeded data counts
-│   │
-│   ├── data/
-│   │   └── vectors/                ← FAISS index files per user (auto-created)
-│   │
-│   ├── docker/
-│   │   ├── Dockerfile.backend
-│   │   ├── Dockerfile.frontend
-│   │   └── nginx.conf
-│   │
-│   ├── k8s/
-│   │   ├── namespace.yaml
-│   │   ├── configmap.yaml
-│   │   ├── postgres-pvc.yaml
-│   │   ├── postgres-deployment.yaml
-│   │   ├── backend-deployment.yaml
-│   │   ├── frontend-deployment.yaml
-│   │   └── deploy.sh
-│   │
-│   ├── .env                        ← DB + Groq + JWT config (update before running)
-│   ├── requirements.txt            ← Python dependencies
-│   ├── docker-compose.yml
-│   ├── start_backend.bat           ← CMD startup script (enforces venv)
-│   └── start_backend.ps1           ← PowerShell startup script (enforces venv)
-│
-└── soulsync_env/                   ← Python virtual environment (not in repo, create locally)
+└── soulsync-ai/                    ← Main application folder
+    │
+    ├── backend/                    ← Python FastAPI backend
+    │   ├── main.py                 ← App entry point
+    │   ├── api/                    ← API route handlers
+    │   │   ├── chat.py             ← POST /chat (main endpoint)
+    │   │   ├── voice.py            ← Voice endpoints
+    │   │   ├── tasks.py            ← Task CRUD
+    │   │   ├── memory.py           ← Memory endpoints
+    │   │   ├── suggestion.py       ← Insights endpoints
+    │   │   ├── processing.py       ← Processing endpoints
+    │   │   ├── optimization.py     ← Performance endpoints
+    │   │   ├── unique_features.py  ← Special features
+    │   │   └── payment.py          ← Payment endpoints (disabled)
+    │   ├── auth/                   ← Authentication
+    │   │   └── routes.py           ← /auth endpoints
+    │   ├── core/                   ← Core services
+    │   │   └── ai_service.py       ← Groq API client
+    │   ├── db/                     ← Database layer
+    │   │   ├── mongo/              ← MongoDB connection
+    │   │   └── redis/              ← Redis caching
+    │   ├── memory/                 ← Memory management
+    │   │   └── memory_manager.py   ← Conversation storage
+    │   ├── processing/             ← NLP processing
+    │   │   ├── extractor.py        ← Memory extraction
+    │   │   ├── intent_detector.py  ← Intent classification
+    │   │   ├── language_detector.py← Language detection
+    │   │   └── mood_predictor.py   ← Mood logging
+    │   ├── retrieval/              ← RAG engine
+    │   │   ├── rag_engine.py       ← Main RAG pipeline
+    │   │   └── vector_store.py     ← FAISS operations
+    │   ├── suggestion/             ← Smart suggestions
+    │   │   └── suggestion_engine.py← Pattern analysis
+    │   ├── tasks/                  ← Task management
+    │   │   ├── task_manager.py     ← Task CRUD
+    │   │   └── task_detector.py    ← Auto-detection
+    │   └── utils/                  ← Utilities
+    │       ├── logging_config.py   ← Logging configuration
+    │       ├── cache.py            ← Response caching
+    │       ├── voice_tts.py        ← Text-to-speech
+    │       └── voice_stt.py        ← Speech-to-text
+    │
+    ├── soulsync-frontend/          ← React frontend
+    │   ├── src/
+    │   │   ├── App.jsx             ← Main application
+    │   ├── main.jsx               ← Entry point
+    │   │   ├── api/                ← API client
+    │   │   │   └── soulsync.js     ← Axios with JWT
+    │   │   ├── components/         ← UI components
+    │   │   │   ├── ChatWindow.jsx  ← Chat display
+    │   │   │   ├── ChatInput.jsx   ← Message input
+    │   │   │   ├── Header.jsx      ← Navigation
+    │   │   │   ├── TaskPanel.jsx   ← Tasks sidebar
+    │   │   │   ├── InsightPanel.jsx← Insights sidebar
+    │   │   │   └── VoiceMode.jsx   ← Voice UI
+    │   │   ├── context/            ← React context
+    │   │   │   └── AuthContext.jsx ← Auth state
+    │   │   ├── hooks/              ← Custom hooks
+    │   │   │   └── useTaskReminder.js
+    │   │   ├── pages/              ← Page components
+    │   │   │   ├── Landing.jsx     ← Landing page
+    │   │   │   ├── Login.jsx       ← Login page
+    │   │   │   └── Signup.jsx      ← Signup page
+    │   │   └── services/           ← Business logic
+    │   │       ├── notifications.js
+    │   │       └── taskReminder.js
+    │   ├── public/                 ← Static assets
+    │   └── package.json
+    │
+    ├── scripts/                    ← Utility scripts
+    │   ├── seed_users.py           ← Create demo users
+    │   └── verify_seed.py          ← Verify seeded data
+    │
+    ├── data/                       ← Data storage
+    │   └── vectors/                ← FAISS index files
+    │
+    ├── docker/                     ← Docker configuration
+    │   ├── Dockerfile.backend
+    │   ├── Dockerfile.frontend
+    │   └── nginx.conf
+    │
+    ├── k8s/                        ← Kubernetes manifests
+    │   ├── namespace.yaml
+    │   ├── configmap.yaml
+    │   ├── deployments/
+    │   └── deploy.sh
+    │
+    ├── .env                        ← Environment config
+    ├── .env.example                ← Config template
+    ├── requirements.txt            ← Python dependencies
+    ├── docker-compose.yml          ← Docker Compose
+    ├── start_backend.bat           ← Windows startup
+    └── start_backend.ps1           ← PowerShell startup
 ```
 
 ---
 
-## 🚀 Local Run Guide
+## 📖 Complete Setup Guide
 
-### Prerequisites
+### Step 1: Prerequisites
 
-| Tool | Version | Check |
-|---|---|---|
-| Python | 3.11+ | `python --version` |
-| Node.js | 20+ | `node -v` |
-| MongoDB Atlas | Cloud account | [Create free cluster](https://www.mongodb.com/cloud/atlas) |
+Ensure you have the following installed:
 
----
+```bash
+# Check Python (3.11+)
+python --version
 
-### Step 1 — Clone the repository
+# Check Node.js (20+)
+node -v
+
+# Check Git
+git --version
+```
+
+### Step 2: Clone Repository
 
 ```bash
 git clone https://github.com/intsurjeetkaran-droid/SoulSync.git
 cd SoulSync
 ```
 
----
-
-### Step 2 — Create & Activate Virtual Environment
+### Step 3: Set Up Python Environment
 
 ```bash
-# Create venv
-python -m venv soulsync_env
+# Create virtual environment
+python -m venv venv
 
-# Windows CMD
-soulsync_env\Scripts\activate
+# Activate (Windows)
+venv\Scripts\activate
 
-# Windows PowerShell
-.\soulsync_env\Scripts\Activate.ps1
-
-# Mac / Linux
-source soulsync_env/bin/activate
+# Activate (macOS/Linux)
+source venv/bin/activate
 ```
 
----
-
-### Step 3 — Install Python Dependencies
+### Step 4: Install Dependencies
 
 ```bash
+# Install Python packages
 pip install -r soulsync-ai/requirements.txt
+
+# Install Node packages
+cd soulsync-ai/soulsync-frontend
+npm install
+cd ../..
 ```
 
----
+### Step 5: Set Up MongoDB
 
-### Step 4 — Configure Environment
+#### Option A: MongoDB Atlas (Cloud - Recommended)
 
-Edit `soulsync-ai/.env` with your MongoDB Atlas connection string:
+1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a free account and cluster
+3. Click "Connect" → "Connect your application"
+4. Copy the connection string
+5. Update your `.env` file
 
-```env
-# Groq API Key
-GROQ_API_KEY=your_groq_api_key_here
-
-# JWT Auth
-JWT_SECRET_KEY=soulsync-super-secret-jwt-key-change-in-production-2026
-JWT_ALGORITHM=HS256
-JWT_EXPIRE_MINUTES=10080
-
-# MongoDB Atlas (Primary Database)
-MONGODB_URL=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/soulsync_db?retryWrites=true&w=majority
-MONGODB_DB=soulsync_db
-
-# Redis (Optional - for caching)
-REDIS_URL=redis://localhost:6379
-REDIS_TTL_CHAT=600
-REDIS_TTL_SESSION=86400
-REDIS_TTL_DEFAULT=300
-```
-
-> **Get MongoDB Atlas:** Create a free cluster at [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
-> 
-> **Get Groq API Key:** Get a free key at [console.groq.com](https://console.groq.com)
-
----
-
-### Step 5 — Seed Demo Users (one time only)
+#### Option B: Local MongoDB
 
 ```bash
-cd soulsync-ai
-python scripts/seed_users.py
+# macOS (with Homebrew)
+brew tap mongodb/brew
+brew install mongodb-community
+brew services start mongodb-community
+
+# Ubuntu/Debian
+sudo apt-get install -y mongodb-org
+sudo systemctl start mongod
+
+# Windows: Download and install from mongodb.com
 ```
 
-This creates **5 ready-to-use demo accounts** with memories, tasks, mood history, and personal info pre-loaded. Credentials are saved to `credentials.txt` at the project root.
+### Step 6: Configure Environment
 
----
+1. Copy the example file:
+   ```bash
+   cp soulsync-ai/.env.example soulsync-ai/.env
+   ```
 
-### Step 6 — Start Backend (Terminal 1)
+2. Edit `soulsync-ai/.env`:
+   ```env
+   # Groq API Key (Required)
+   GROQ_API_KEY=your_groq_api_key_here
+   
+   # MongoDB Connection
+   MONGODB_URL=mongodb://localhost:27017/soulsync_db
+   # OR for Atlas:
+   # MONGODB_URL=mongodb+srv://user:pass@cluster.mongodb.net/soulsync_db
+   
+   # JWT Secret (Change in production!)
+   JWT_SECRET_KEY=your-super-secret-jwt-key-change-in-production
+   
+   # Redis (Optional)
+   REDIS_URL=redis://localhost:6379
+   ```
 
-**Option A — Use the startup script (recommended, enforces venv automatically):**
+3. Get your Groq API key from [console.groq.com](https://console.groq.com/keys)
+
+### Step 7: Start Backend
 
 ```bash
-# Windows CMD
-soulsync-ai\start_backend.bat
-
-# Windows PowerShell
-powershell -ExecutionPolicy Bypass -File soulsync-ai\start_backend.ps1
-```
-
-**Option B — Manual (activate venv first):**
-
-```bash
-.\soulsync_env\Scripts\activate
+# From project root, with venv active
 cd soulsync-ai
 python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-> ⚠️ **The backend must always run inside `soulsync_env`.** The startup scripts enforce this automatically. If you run with system Python, packages like `groq`, `psycopg2`, and `jose` will be missing.
+**Expected output:**
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000
+INFO:     Application startup complete.
+```
 
-✅ Backend: **http://localhost:8000**
-📖 Swagger docs: **http://localhost:8000/docs**
+### Step 8: Start Frontend
 
----
-
-### Step 7 — Start Frontend (Terminal 2)
+Open a **new terminal** (keep backend running):
 
 ```bash
-cd soulsync-ai\soulsync-frontend
-npm install        # first time only
+cd soulsync-ai/soulsync-frontend
 npm run dev
 ```
 
-✅ Frontend: **http://localhost:5173**
-
----
-
-### Step 8 — Open & Login
-
-1. Go to **http://localhost:5173**
-2. You land on the **Landing Page** — click **Get Started** or **Sign In**
-3. Use any credential from `credentials.txt`, e.g.:
-   - Email: `rohit@soulsync.ai` · Password: `rohit123`
-4. You are redirected to the **Chat App** with all your data loaded
-
----
-
-### Quick Start (all steps at a glance)
-
-```bash
-# Terminal 1 — Backend
-powershell -ExecutionPolicy Bypass -File soulsync-ai\start_backend.ps1
-
-# Terminal 2 — Frontend
-cd soulsync-ai\soulsync-frontend
-npm run dev
+**Expected output:**
+```
+➜  Local:   http://localhost:5173/
 ```
 
-Then open **http://localhost:5173**
+### Step 9: Test the Application
+
+1. Open http://localhost:5173 in your browser
+2. Click "Get Started" or "Sign In"
+3. Create an account or use demo credentials from `credentials.txt`
+4. Start chatting with SoulSync AI!
 
 ---
 
-## ⚙️ Environment Setup
+## ⚙️ Environment Configuration
 
-### `.env` File (soulsync-ai/.env)
+### Required Variables
 
-```env
-# Groq API
-GROQ_API_KEY=your_groq_api_key_here
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `GROQ_API_KEY` | Groq API key for AI | `gsk_xxxxx...` |
+| `MONGODB_URL` | MongoDB connection string | `mongodb://localhost:27017/soulsync_db` |
+| `MONGODB_DB` | Database name | `soulsync_db` |
+| `JWT_SECRET_KEY` | JWT signing secret | `your-secret-key` |
+| `JWT_ALGORITHM` | JWT algorithm | `HS256` |
+| `JWT_EXPIRE_MINUTES` | Token expiration | `10080` (7 days) |
 
-# JWT Auth
-JWT_SECRET_KEY=soulsync-super-secret-jwt-key-change-in-production-2026
-JWT_ALGORITHM=HS256
-JWT_EXPIRE_MINUTES=10080
+### Optional Variables
 
-# MongoDB Atlas (Primary Database)
-MONGODB_URL=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/soulsync_db?retryWrites=true&w=majority
-MONGODB_DB=soulsync_db
-
-# Redis (Optional - for caching)
-REDIS_URL=redis://localhost:6379
-REDIS_TTL_CHAT=600
-REDIS_TTL_SESSION=86400
-REDIS_TTL_DEFAULT=300
-```
-
-### MongoDB Collections (auto-created on first run)
-
-| Collection | Purpose |
-|---|---|
-| `users` | Registered users with auth data |
-| `conversations` | Conversation sessions (one per month per user) |
-| `messages` | All chat messages (user + assistant) |
-| `memories` | Personal facts (key/value pairs) |
-| `tasks` | User tasks with priority and status |
-| `activities` | Structured extracted data (emotion, activity, status) |
-| `mood_logs` | Mood tracking entries |
-| `memory_collections` | Typed life events (32 collection types) |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `REDIS_URL` | Redis connection | `redis://localhost:6379` |
+| `LOG_LEVEL` | Logging level | `INFO` |
+| `LOG_FORMAT` | Log format (text/json) | `text` |
+| `ENABLE_FILE_LOGGING` | Log to file | `false` |
 
 ---
 
 ## 📊 API Reference
 
-### Auth
+### Authentication
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/v1/auth/signup` | Create account → returns JWT token |
-| POST | `/api/v1/auth/login`  | Login with email + password → returns JWT token |
-| GET  | `/api/v1/auth/me`     | Get current user profile (requires Bearer token) |
-
----
+| POST | `/api/v1/auth/signup` | Create account |
+| POST | `/api/v1/auth/login` | Login |
+| GET | `/api/v1/auth/me` | Get current user |
 
 ### Chat
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/v1/chat` | Send message → get AI response with RAG + memory |
+| POST | `/api/v1/chat` | Send message → AI response |
 | GET | `/api/v1/health` | Health check |
 
-**Chat Request Body:**
+**Chat Request:**
 ```json
 {
-  "user_id": "user_001",
-  "message": "I had a tough day today",
+  "user_id": "user123",
+  "message": "Hello, how are you?",
   "use_memory": true,
   "use_rag": true
 }
@@ -582,246 +572,280 @@ REDIS_TTL_DEFAULT=300
 **Chat Response:**
 ```json
 {
-  "user_id": "user_001",
-  "message": "I had a tough day today",
-  "response": "I'm sorry to hear that...",
-  "memory_used": true,
-  "rag_used": true,
-  "retrieved_memories": [...],
-  "tasks_created": [...],
+  "response": "I'm doing great! How can I help you today?",
+  "retrieved_memories": [],
+  "tasks_created": [],
   "intent": "normal_chat",
   "stored_fact": null
 }
 ```
 
----
+### Tasks
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/v1/tasks` | Create task |
+| GET | `/api/v1/tasks/{user_id}` | List tasks |
+| PUT | `/api/v1/tasks/{id}/complete` | Complete task |
+| DELETE | `/api/v1/tasks/{id}` | Delete task |
 
 ### Memory
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/v1/save-memory` | Save a message to memory |
-| GET | `/api/v1/get-memory/{user_id}` | Fetch recent memories |
-
----
-
-### Processing
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/v1/process-memory` | Extract structured data from text |
-| GET | `/api/v1/get-activities/{user_id}` | Fetch structured activities |
-| GET | `/api/v1/emotion-summary/{user_id}` | Get emotion frequency counts |
-
----
+| GET | `/api/v1/memory/chat` | Get chat history |
+| GET | `/api/v1/memory/facts` | Get personal facts |
+| POST | `/api/v1/memory/facts` | Store personal fact |
 
 ### Suggestions
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/v1/suggestions/{user_id}` | Get smart suggestions |
-| GET | `/api/v1/analysis/{user_id}` | Get full pattern analysis |
-
----
-
-### Tasks
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/v1/tasks` | Create a task manually |
-| GET | `/api/v1/tasks/{user_id}` | List all tasks |
-| PUT | `/api/v1/tasks/{id}/complete` | Mark task as completed |
-| DELETE | `/api/v1/tasks/{id}` | Delete a task |
-| POST | `/api/v1/tasks/auto-detect` | Detect + create tasks from text |
-
----
+| GET | `/api/v1/suggestions/{user_id}` | Get suggestions |
+| GET | `/api/v1/analysis/{user_id}` | Full analysis |
 
 ### Voice
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/v1/voice/transcribe` | Upload audio file → transcribed text (Whisper) |
-| POST | `/api/v1/voice/speak` | Text → WAV audio bytes (pyttsx3 TTS) |
-| POST | `/api/v1/voice/chat` | Full pipeline: audio in → AI response → audio out |
-| GET  | `/api/v1/voice/voices` | List available TTS voices on this system |
-
-> **Note:** Voice endpoints are available but currently not integrated in the frontend UI. Voice mode is disabled in the current version.
-
----
-
-### Optimization
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/v1/optimize/cache-stats` | View response cache stats |
-| POST | `/api/v1/optimize/cache-clear` | Clear response cache |
-| GET | `/api/v1/optimize/pool-stats` | View DB connection pool stats |
-| GET | `/api/v1/optimize/model-info` | Model + device + ONNX info |
-| POST | `/api/v1/optimize/export-onnx` | Export model to ONNX (background) |
+| POST | `/api/v1/voice/transcribe` | Speech to text |
+| POST | `/api/v1/voice/speak` | Text to speech |
 
 ---
 
 ## 🗄️ Database Schema
 
-```sql
--- Users table (with auth columns)
-CREATE TABLE users (
-    id         SERIAL PRIMARY KEY,
-    user_id    VARCHAR(100) UNIQUE NOT NULL,
-    name       VARCHAR(200),
-    email      VARCHAR(255) UNIQUE,
-    password   VARCHAR(255),          -- bcrypt hashed
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### MongoDB Collections
 
--- Memories table (all conversations, permanent)
-CREATE TABLE memories (
-    id               SERIAL PRIMARY KEY,
-    user_id          VARCHAR(100) NOT NULL,
-    role             VARCHAR(20) NOT NULL,   -- 'user' or 'assistant'
-    message          TEXT NOT NULL,
-    importance_score INT DEFAULT 5,          -- 0-15 scale
-    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
+#### users
+```javascript
+{
+  _id: ObjectId,
+  user_id: String (unique),
+  email: String (unique),
+  password: String (hashed),
+  name: String,
+  created_at: DateTime
+}
+```
 
--- Personal info table (structured key/value facts)
-CREATE TABLE personal_info (
-    id          SERIAL PRIMARY KEY,
-    user_id     VARCHAR(100) NOT NULL,
-    key         VARCHAR(100) NOT NULL,   -- 'name', 'goal', 'job', etc.
-    value       TEXT NOT NULL,
-    source_text TEXT,
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (user_id, key),
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
+#### conversations
+```javascript
+{
+  _id: ObjectId,
+  conversation_id: String (unique),
+  user_id: String,
+  title: String,
+  first_message_at: DateTime,
+  last_message_at: DateTime
+}
+```
 
--- Activities table (structured extracted data)
-CREATE TABLE activities (
-    id           SERIAL PRIMARY KEY,
-    user_id      VARCHAR(100) NOT NULL,
-    raw_text     TEXT NOT NULL,
-    emotion      VARCHAR(100),
-    activity     VARCHAR(200),
-    status       VARCHAR(100),
-    productivity VARCHAR(50),
-    summary      TEXT,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
+#### messages
+```javascript
+{
+  _id: ObjectId,
+  message_id: String (unique),
+  conversation_id: String,
+  user_id: String,
+  role: String (user/assistant),
+  content: String,
+  created_at: DateTime
+}
+```
 
--- Tasks table
-CREATE TABLE tasks (
-    id         SERIAL PRIMARY KEY,
-    user_id    VARCHAR(100) NOT NULL,
-    title      TEXT NOT NULL,
-    due_date   VARCHAR(100),
-    priority   VARCHAR(20) DEFAULT 'medium',
-    status     VARCHAR(20) DEFAULT 'pending',
-    source     VARCHAR(20) DEFAULT 'manual',  -- 'manual' or 'auto'
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
+#### memories (Personal Facts)
+```javascript
+{
+  _id: ObjectId,
+  memory_id: String (unique),
+  user_id: String,
+  key: String,
+  value: String,
+  context: String,
+  created_at: DateTime
+}
+```
 
--- Mood logs table
-CREATE TABLE mood_logs (
-    id          SERIAL PRIMARY KEY,
-    user_id     VARCHAR(100) NOT NULL,
-    mood        VARCHAR(50) NOT NULL,
-    mood_score  INT NOT NULL,           -- 1-10
-    note        TEXT,
-    day_of_week VARCHAR(10),
-    hour_of_day INT,
-    source      VARCHAR(20) DEFAULT 'manual',
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
+#### tasks
+```javascript
+{
+  _id: ObjectId,
+  task_id: String (unique),
+  user_id: String,
+  title: String,
+  status: String (pending/completed/deleted),
+  priority: String (high/medium/low),
+  due_date: String,
+  created_at: DateTime
+}
+```
+
+#### activities
+```javascript
+{
+  _id: ObjectId,
+  activity_id: String (unique),
+  user_id: String,
+  raw_text: String,
+  emotion: String,
+  activity: String,
+  status: String,
+  productivity: String,
+  created_at: DateTime
+}
 ```
 
 ---
 
-## 🧪 Test Scripts
+## 👨‍💻 Development Guidelines
 
-```bash
-# Always run from the soulsync-ai/ folder with venv active
-.\soulsync_env\Scripts\activate
-cd soulsync-ai
+### Coding Standards
 
-# Seed demo users (run this first)
-python scripts\seed_users.py
+#### Python (Backend)
+- Follow [PEP 8](https://pep8.org/) style guide
+- Use type hints for all functions
+- Add docstrings to all public functions
+- Use the logging module (not print)
+- Handle errors with specific exceptions
 
-# Verify seeded data
-python scripts\verify_seed.py
+#### JavaScript/React (Frontend)
+- Use functional components with hooks
+- Add JSDoc comments for complex functions
+- Follow Airbnb React/JSX style guide
+- Use PropTypes for component validation
+
+### Logging
+
+The application uses a centralized logging system:
+
+```python
+from backend.utils.logging_config import get_logger
+
+logger = get_logger("my_module")
+logger.info("Information message")
+logger.warning("Warning message")
+logger.error("Error message")
 ```
 
----
+### Git Workflow
 
-## ⚡ Performance
-
-| Metric | Value |
-|---|---|
-| Groq API response (avg) | 0.3 – 0.7 s |
-| Embedding (all-MiniLM-L6-v2) | ~15 ms per text |
-| FAISS search (top-5) | < 5 ms |
-| Language detection | < 1 ms (pattern-based) |
-| Cache hit rate | ~83% |
-| Cache size | 200 entries (LRU) |
-| Cache TTL | 10 minutes |
-| DB pool connections | 2 – 10 |
-| Embedding dimension | 384 |
-| Supported languages | English, Hindi, Hinglish |
+1. Create a feature branch: `git checkout -b feature/your-feature`
+2. Make changes and commit: `git commit -m "feat: description"`
+3. Push to remote: `git push origin feature/your-feature`
+4. Create a Pull Request on GitHub
 
 ---
 
 ## 🐳 Deployment
 
-### Docker Compose (Recommended for local production)
+### Docker Compose
 
 ```bash
 cd soulsync-ai
-
-# Build and start all services
 docker-compose up --build
-
-# Stop all services
-docker-compose down
 ```
 
-Services started:
-- `soulsync-postgres` → PostgreSQL 16 on port 5432
-- `soulsync-backend`  → FastAPI on port 8000
+Services:
+- `soulsync-backend` → FastAPI on port 8000
 - `soulsync-frontend` → Nginx on port 80
+- `soulsync-mongodb` → MongoDB on port 27017
 
-Open: **http://localhost**
-
----
-
-### Kubernetes (Production scaling)
+### Kubernetes
 
 ```bash
-# Prerequisites: kubectl + minikube installed
-
 minikube start
 bash k8s/deploy.sh
 ```
 
-Access:
-- Frontend: **http://localhost:30080**
-- Backend:  **http://localhost:8000**
+### Production Considerations
+
+- Use environment variables for all secrets
+- Enable HTTPS/TLS
+- Set up proper monitoring and logging
+- Configure backup strategies for MongoDB
+- Use a production-grade Redis instance
+- Set appropriate resource limits
 
 ---
 
-### Docker Build Only
+## 🔧 Troubleshooting
 
+### Common Issues
+
+#### "ModuleNotFoundError: No module named 'backend'"
 ```bash
-# Backend image
-docker build -f docker/Dockerfile.backend -t soulsync-backend:latest .
-
-# Frontend image
-docker build -f docker/Dockerfile.frontend -t soulsync-frontend:latest .
+# Make sure you're in the soulsync-ai directory
+cd soulsync-ai
+# Activate virtual environment
+source ../venv/bin/activate  # or venv\Scripts\activate on Windows
 ```
+
+#### "MongoDB connection failed"
+```bash
+# Check if MongoDB is running
+# macOS: brew services list
+# Linux: sudo systemctl status mongod
+# Windows: Check Services
+
+# Start MongoDB if not running
+# macOS: brew services start mongodb-community
+# Linux: sudo systemctl start mongod
+```
+
+#### "GROQ_API_KEY is not set"
+- Make sure your `.env` file is in the `soulsync-ai` directory
+- Check that `GROQ_API_KEY` is set correctly
+- Restart the backend after changing `.env`
+
+#### "Port already in use"
+```bash
+# Find and kill process on port 8000 or 5173
+# macOS/Linux: lsof -ti:8000 | xargs kill -9
+# Windows: netstat -ano | findstr :8000
+```
+
+#### "Cannot connect to backend"
+- Make sure backend is running on port 8000
+- Check `VITE_API_URL` in `soulsync-frontend/.env`
+- Should be: `VITE_API_URL=http://localhost:8000`
+
+### Getting Help
+
+1. Check the [API Documentation](http://localhost:8000/docs)
+2. Review backend logs for error messages
+3. Check browser console for frontend errors
+4. Search [GitHub Issues](https://github.com/intsurjeetkaran-droid/SoulSync/issues)
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. **Fork** the repository
+2. **Clone** your fork: `git clone https://github.com/your-username/SoulSync.git`
+3. **Create a branch**: `git checkout -b feature/your-feature`
+4. **Make changes** following our coding standards
+5. **Test** your changes thoroughly
+6. **Commit** with clear messages: `git commit -m "feat: add new feature"`
+7. **Push** to your fork: `git push origin feature/your-feature`
+8. **Create a Pull Request** on GitHub
+
+### Contribution Guidelines
+
+- Follow the coding standards outlined above
+- Add tests for new features
+- Update documentation as needed
+- Keep pull requests focused and manageable
+- Be respectful and constructive in discussions
+
+### First-Time Contributors
+
+Look for issues labeled:
+- `good first issue` - Perfect for beginners
+- `help wanted` - Need extra hands
+- `documentation` - Improve docs
 
 ---
 
@@ -857,17 +881,16 @@ docker build -f docker/Dockerfile.frontend -t soulsync-frontend:latest .
 | 1 | Core AI (Groq) | 🟢 Complete | Groq API, llama-3.3-70b-versatile |
 | 2 | Language Detection | 🟢 Complete | Pattern-based, English/Hindi/Hinglish |
 | 3 | Memory System | 🟢 Complete | MongoDB, motor, permanent storage |
-| 4 | Personal Info Store | 🟢 Complete | MongoDB memories collection, upsert |
-| 5 | Intent Detection | 🟢 Complete | Regex classifier — 5 intents |
-| 6 | Memory Processing | 🟢 Complete | Rule-based NLP, activity extraction |
-| 7 | Retrieval (RAG) | 🟢 Complete | FAISS top-5, keyword fallback, earliest recall |
-| 8 | Suggestion Engine | 🟢 Complete | Pandas, NumPy, rule-based logic |
-| 9 | Task Module | 🟢 Complete | Strict NLP detection, MongoDB CRUD |
-| 10 | Authentication | 🟢 Complete | JWT, bcrypt, signup/login/me |
+| 4 | Personal Info Store | 🟢 Complete | MongoDB memories collection |
+| 5 | Intent Detection | 🟢 Complete | Regex classifier — 4 intents |
+| 6 | Memory Processing | 🟢 Complete | Rule-based NLP extraction |
+| 7 | Retrieval (RAG) | 🟢 Complete | FAISS top-5, keyword fallback |
+| 8 | Suggestion Engine | 🟢 Complete | Pandas, NumPy, rule-based |
+| 9 | Task Module | 🟢 Complete | NLP detection, MongoDB CRUD |
+| 10 | Authentication | 🟢 Complete | JWT, bcrypt, signup/login |
 | 11 | Frontend App | 🟢 Complete | React, Vite, Tailwind, Framer Motion |
-| 12 | Landing Page | 🟢 Complete | Hero, Features, Use-Case Carousel, CTA |
-| 13 | Voice Mode | 🟢 Complete | edge-tts (Neerja), Web Speech API |
-| 14 | Deployment | 🟢 Complete | Docker, Kubernetes, Nginx, venv enforcement |
+| 12 | Landing Page | 🟢 Complete | Hero, Features, Carousel, CTA |
+| 13 | Deployment | 🟢 Complete | Docker, Kubernetes, Nginx |
 
 ---
 
@@ -876,26 +899,23 @@ docker build -f docker/Dockerfile.frontend -t soulsync-frontend:latest .
 - Passwords are **bcrypt-hashed** — never stored in plain text
 - **JWT authentication** — every API request requires a valid token
 - Each user's memory is **fully isolated** — no cross-user data leakage
-- **MongoDB Atlas** — cloud database with encryption at rest
+- **MongoDB** — database with encryption at rest (Atlas)
 - User can delete any memory or task at any time
 - API endpoints validate all inputs with Pydantic
-- CORS configured (tighten `allow_origins` in production)
+- CORS configured for allowed origins
 
 ---
 
 ## 🚀 Future Roadmap
 
 - [x] Multi-user support with JWT authentication
-- [x] Groq API integration (replaced local models)
+- [x] Groq API integration (sub-second responses)
 - [x] Multi-language support (English, Hindi, Hinglish)
-- [x] Automatic language detection (pattern-based)
 - [x] Intent detection (store / query / task / chat)
 - [x] Structured personal info memory
-- [x] Chronological memory recall ("what was my first experience?")
+- [x] Chronological memory recall
 - [x] Premium landing page with animations
-- [x] Clean chat window on every login (session-isolated state)
-- [x] Venv enforcement (startup scripts)
-- [ ] Voice Mode (Whisper + pyttsx3 available, UI integration pending)
+- [ ] Voice Mode UI integration
 - [ ] Emotion detection from voice tone
 - [ ] Deep personality modeling
 - [ ] Calendar and app integrations

@@ -1,9 +1,40 @@
+/**
+ * SoulSync AI - Main Application Component
+ * 
+ * This is the central orchestrator for the entire SoulSync AI frontend.
+ * It manages the main chat interface, sidebar panels, voice mode, and
+ * coordinates communication between all child components.
+ * 
+ * Key Features:
+ * - Real-time chat with AI companion
+ * - Voice mode with speech-to-text and text-to-speech
+ * - Task management sidebar
+ * - Insights and analytics panel
+ * - Responsive design (desktop sidebar + mobile drawer)
+ * - Auto-task detection and notifications
+ * 
+ * Architecture:
+ * - State Management: React hooks (useState, useEffect, useCallback)
+ * - API Communication: Axios via soulsync.js
+ * - Authentication: JWT tokens via AuthContext
+ * - Styling: Tailwind CSS + Framer Motion animations
+ * - Notifications: react-hot-toast
+ * 
+ * @module App
+ * @requires react
+ * @requires react-router-dom
+ * @requires framer-motion
+ * @requires lucide-react
+ * @requires react-hot-toast
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "react-hot-toast";
 import { LayoutDashboard, MessageSquare, ChevronRight, X, SlidersHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
+// Import UI components
 import Header              from "./components/Header";
 import ChatWindow          from "./components/ChatWindow";
 import ChatInput           from "./components/ChatInput";
@@ -12,13 +43,33 @@ import InsightPanel        from "./components/InsightPanel";
 import VoiceMode           from "./components/VoiceMode";
 import NotificationBanner  from "./components/NotificationBanner";
 import VoiceComingSoon     from "./components/VoiceComingSoon";
+
+// Import hooks and services
 import useTaskReminder     from "./hooks/useTaskReminder";
 import { sendMessage } from "./api/soulsync";
 import { useAuth } from "./context/AuthContext";
 
+/**
+ * Helper function to get current time in HH:MM format
+ * Used for timestamping chat messages
+ * @returns {string} Formatted time string
+ */
 const now = () =>
   new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+/**
+ * Main Application Component
+ * 
+ * Manages the entire application state and layout. Handles:
+ * - User authentication state
+ * - Chat message flow
+ * - Sidebar/drawer state
+ * - Voice mode overlay
+ * - Task and insight panels
+ * 
+ * @component
+ * @returns {JSX.Element} The main application UI
+ */
 export default function App() {
   const { user, logout, updateUser }            = useAuth();
   const navigate                              = useNavigate();
