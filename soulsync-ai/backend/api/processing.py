@@ -28,7 +28,7 @@ class ProcessRequest(BaseModel):
 class ProcessResponse(BaseModel):
     user_id     : str
     raw_text    : str
-    activity_id : int
+    activity_id : str
     extracted   : dict
 
 

@@ -14,14 +14,17 @@ logger = logging.getLogger("soulsync.memory_manager")
 # ── Async helper ──────────────────────────────────────────
 
 def _run(coro):
+    """Run async coroutine safely from both sync and async contexts."""
+    import asyncio
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                return pool.submit(asyncio.run, coro).result()
-        return loop.run_until_complete(coro)
+        loop = asyncio.get_running_loop()
+        # We're inside a running event loop (FastAPI) — use a thread
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(asyncio.run, coro)
+            return future.result(timeout=30)
     except RuntimeError:
+        # No running loop — run directly
         return asyncio.run(coro)
 
 

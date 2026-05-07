@@ -13,13 +13,14 @@ logger = logging.getLogger("soulsync.collection_store")
 
 
 def _run(coro):
+    """Run async coroutine safely from both sync and async contexts."""
+    import asyncio
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                return pool.submit(asyncio.run, coro).result()
-        return loop.run_until_complete(coro)
+        loop = asyncio.get_running_loop()
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(asyncio.run, coro)
+            return future.result(timeout=30)
     except RuntimeError:
         return asyncio.run(coro)
 
@@ -101,3 +102,120 @@ def get_all_collections_summary(user_id: str) -> dict:
         return _run(_run_inner())
     except Exception:
         return {}
+
+
+def get_earliest_in_collection(user_id: str, collection: str) -> dict | None:
+    """Get the oldest entry in a specific collection."""
+    async def _run_inner():
+        db = _db()
+        doc = await db.memory_collections.find_one(
+            {"user_id": user_id, "collection": collection},
+            sort=[("event_date", 1), ("created_at", 1)]
+        )
+        if not doc:
+            return None
+        return {
+            "id"        : str(doc.get("_id", "")),
+            "collection": doc.get("collection"),
+            "content"   : doc.get("content"),
+            "event_date": doc.get("event_date"),
+            "importance": doc.get("importance", 5),
+            "summary"   : doc.get("summary", ""),
+            "created_at": str(doc.get("created_at", "")),
+        }
+    try:
+        return _run(_run_inner())
+    except Exception:
+        return None
+
+
+def query_collection(user_id: str, collection: str, limit: int = 5,
+                     order: str = "DESC") -> list:
+    """Query entries from a specific collection."""
+    async def _run_inner():
+        db = _db()
+        sort_dir = -1 if order == "DESC" else 1
+        cursor = (
+            db.memory_collections
+            .find({"user_id": user_id, "collection": collection})
+            .sort("event_date", sort_dir)
+            .limit(limit)
+        )
+        docs = []
+        async for doc in cursor:
+            docs.append({
+                "id"        : str(doc.get("_id", "")),
+                "collection": doc.get("collection"),
+                "content"   : doc.get("content"),
+                "event_date": doc.get("event_date"),
+                "importance": doc.get("importance", 5),
+                "summary"   : doc.get("summary", ""),
+                "created_at": str(doc.get("created_at", "")),
+            })
+        return docs
+    try:
+        return _run(_run_inner())
+    except Exception:
+        return []
+
+
+def keyword_search_collection(user_id: str, keyword: str,
+                               collection: str = None, limit: int = 5) -> list:
+    """Search collection entries by keyword."""
+    import re as _re
+    async def _run_inner():
+        db = _db()
+        pattern = _re.compile(_re.escape(keyword), _re.IGNORECASE)
+        query = {"user_id": user_id, "content": {"$regex": pattern}}
+        if collection:
+            query["collection"] = collection
+        cursor = db.memory_collections.find(query).sort("event_date", -1).limit(limit)
+        docs = []
+        async for doc in cursor:
+            docs.append({
+                "id"        : str(doc.get("_id", "")),
+                "collection": doc.get("collection"),
+                "content"   : doc.get("content"),
+                "event_date": doc.get("event_date"),
+                "importance": doc.get("importance", 5),
+                "created_at": str(doc.get("created_at", "")),
+            })
+        return docs
+    try:
+        return _run(_run_inner())
+    except Exception:
+        return []
+
+
+def get_conversation_chain(user_id: str, entry_id: str, window: int = 3) -> list:
+    """Get surrounding entries for context around a specific entry."""
+    async def _run_inner():
+        db = _db()
+        # Get the target entry
+        from bson import ObjectId
+        try:
+            doc = await db.memory_collections.find_one({"_id": ObjectId(entry_id)})
+        except Exception:
+            doc = await db.memory_collections.find_one({"user_id": user_id})
+        if not doc:
+            return []
+        event_date = doc.get("event_date") or str(doc.get("created_at", ""))
+        # Get nearby entries
+        cursor = (
+            db.memory_collections
+            .find({"user_id": user_id})
+            .sort("event_date", 1)
+            .limit(window * 2 + 1)
+        )
+        docs = []
+        async for d in cursor:
+            docs.append({
+                "collection": d.get("collection"),
+                "content"   : d.get("content"),
+                "event_date": d.get("event_date"),
+            })
+        return docs
+    try:
+        return _run(_run_inner())
+    except Exception:
+        return []
